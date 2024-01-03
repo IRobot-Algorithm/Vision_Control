@@ -15,7 +15,7 @@ RUN cd src && git clone https://github.com/IRobot-Algorithm/Vision_Control.git -
 
 # install dependencies and some tools
 RUN apt-get update && rosdep install --from-paths src --ignore-src -r -y && \
-    apt-get install wget htop vim can-utils libudev-dev libeigen3-dev -y && \
+    apt-get install wget htop vim can-utils libudev-dev libeigen3-dev usbutils -y && \
     sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen && \
     rm -rf /var/lib/apt/lists/*
 
@@ -48,14 +48,13 @@ RUN echo 'export PS1="\[\e[36m\]\u\[\e[m\]@\[\e[32m\]\h\[\e[m\]:\[\e[33m\]\w\[\e
 # eval "$(register-python-argcomplete3 colcon)"\n'\
 # >> /root/.zshrc
 
+# 暂时不确定这样设置代理有没有用
 ENV HTTP_PROXY=http://127.0.0.1:7890
 ENV HTTPS_PROXY=http://127.0.0.1:7890
 # setup libusb
 WORKDIR /tmp 
 RUN wget https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
 RUN sudo tar -jxvf libusb-1.0.26.tar.bz2 
-# RUN sudo apt update && \
-#     sudo apt-get install libudev-dev && 
 WORKDIR /tmp/libusb-1.0.26
 RUN sudo ./configure && \
     sudo make install

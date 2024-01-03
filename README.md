@@ -1,5 +1,7 @@
 
+
 # 1 .Code Structure
+
 ├── firmware: stm32固件，根据IRbot2022电控组云台框架进行构建 https://github.com/Qylann/gimbal-standard  \
 └── src \
 &emsp;&emsp;├── skider_interface: skider自定义通信接口  \
@@ -29,7 +31,22 @@ sudo apt-get install libudev-dev
 cd libusb-1.0.26
 sudo ./configure 
 sudo make install
+
+# check libusb
+cd example
+sudo make listdevs	
+sudo ./listdevs
+
+# 出现类似以下内容即为成功
+1d6b:0003 (bus 4, device 1)
+8087:0033 (bus 3, device 3) path: 10
+0483:5740 (bus 3, device 2) path: 1
+1d6b:0002 (bus 3, device 1)
+1d6b:0003 (bus 2, device 1)
+1d6b:0002 (bus 1, device 1)
 ```
+
+related links: https://blog.csdn.net/jiacong_wang/article/details/106720863?spm=1001.2014.3001.5502
 
 
 
@@ -157,4 +174,77 @@ ros2 launch skider_control skider_control.launch.py
 
 
 
-## Docker based installation is coming soon...
+# Docker based installation
+
+## Method1: pull from ghcr
+
+
+
+``` 
+docker pull ghcr.io/shitoujie/vision_control:latest
+docker run -it --name vc_devel \
+--privileged --network host \
+-v /dev:/dev \
+ghcr/shitoujie/vision_control \
+```
+
+考虑到上述方法速度极慢，因此使用国内的镜像源进行docker pull
+
+``` 
+# 在配置文件 /etc/docker/daemon.json 中加入：
+{
+"registry-mirrors":["https://docker.nju.edu.cn/"]
+}
+
+```
+
+``` 
+sudo systemctl restart docker.service # 重新启动 docker
+
+```
+
+执行`docker info`，如果从输出中看到如下内容，说明配置成功。
+
+``` 
+Registry Mirrors:
+ https://docker.nju.edu.cn/
+```
+
+``` 
+# 现在可以使用以下命令来拉取镜像
+docker pull ghcr.nju.edu.cn/shitoujie/vision_control:latest
+docker run -it --name vc_devel \
+--privileged --network host \
+-v /dev:/dev \
+ghcr.nju.edu.cn/shitoujie/vision_control \
+```
+
+
+
+related links:**https://www.cnblogs.com/rainbow-tan/p/17775385.html**
+
+
+
+## Method2: build from Dockerfile
+
+``` 
+cd docker
+
+docker build -t vc_image .
+docker run -it --name vc_devel \
+--privileged --network host \
+-v /dev:/dev \
+vc_image \
+```
+
+
+
+## Usefel commands
+
+``` 
+# use the following command to add more terminals
+docker exec -it vc_devel bash
+```
+
+
+
