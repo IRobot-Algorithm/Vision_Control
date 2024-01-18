@@ -154,6 +154,10 @@ ros2 launch skider_control skider_control.launch.py
 ./sh/control
 
 ./sh/kill_control
+
+candump can1 | grep 1FF
+
+candump can0 | grep 2004
 ```
 
 
