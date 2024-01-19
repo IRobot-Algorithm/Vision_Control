@@ -150,6 +150,7 @@ ros2 launch skider_hw skider_hw.launch.py
 
 ros2 launch skider_sensor skider_sensor.launch.py
 
+# 启动之前先检查launch文件内的参数路径
 ros2 launch skider_control skider_control.launch.py
 ```
 
@@ -199,7 +200,7 @@ docker run -it --name vc_devel \
 ghcr/shitoujie/vision_control \
 ```
 
-考虑到上述方法速度极慢，因此使用国内的镜像源进行docker pull
+考虑到上述方法连国内网络时速度极慢，因此可以参考[这篇文章](**https://www.cnblogs.com/rainbow-tan/p/17775385.html**)使用国内的镜像源进行docker pull
 
 ``` 
 # 在配置文件 /etc/docker/daemon.json 中加入：
@@ -232,14 +233,10 @@ ghcr.nju.edu.cn/shitoujie/vision_control \
 
 
 
-related links:**https://www.cnblogs.com/rainbow-tan/p/17775385.html**
-
-
-
 ## Method2: build from Dockerfile
 
 ``` 
-# develop（开发）
+# 1.develop（开发）
 cd docker/develop
 
 docker build -t vc_develop_image .
@@ -248,8 +245,13 @@ docker run -it --name vc_develop \
 -v /dev:/dev -v /home/oem/ros_ws:/ros_ws \
 vc_develop_image \
 
-# deploy（部署）
+cd /ros_ws/Vision_Control
+colcon build
+# 启动之前先检查launch文件内的参数路径，尤其是skider_control.launch.py
+
+# 2.deploy（部署）
 cd docker/deploy
+
 docker build -t vc_delpoy_image .
 docker run -it --name vc_deploy \
 --privileged --network host \
@@ -257,7 +259,11 @@ docker run -it --name vc_deploy \
 vc_delpoy_image \
 ```
 
+注意运行开发的镜像时，我们使用`-v /home/oem/ros_ws:/ros_ws`将宿主机`/home/oem/ros_ws`下的内容映射到docker容器内`/ros_ws`处，因此我们只需修改`/home/oem/ros_ws`下的源码、参数，docker内的也会对应更改。
 
+因此此处要**注意**将`/home/oem/ros_ws`**改为**你对应的路径。
+
+开发完毕后将宿主机下的代码提交github即可
 
 
 
