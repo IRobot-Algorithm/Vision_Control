@@ -2,7 +2,14 @@
 
 # 1 .Code Structure
 
-├── firmware: stm32固件，根据IRbot2022电控组云台框架进行构建 https://github.com/Qylann/gimbal-standard  \
+├── firmware: stm32固件，根据[IRbot2022电控组云台框架]( https://github.com/Qylann/gimbal-standard)进行构建  \
+
+└──docker \
+&emsp;&emsp;├── deploy: 存放部署时使用的Dockerfile \
+&emsp;&emsp;├── develop: 存放开发时使用的Dockerfile \
+
+└──sh 存放常用脚本\
+
 └── src \
 &emsp;&emsp;├── skider_interface: skider自定义通信接口  \
 &emsp;&emsp;├── skider_hw: 底层通信包，存放底层接口通信节点 \
@@ -24,7 +31,7 @@
 
 ``` 
 # setup libusb
-https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
+wget https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
 tar -jxvf libusb-1.0.26.tar.bz2 
 sudo apt update 
 sudo apt-get install libudev-dev
@@ -50,9 +57,9 @@ related links: https://blog.csdn.net/jiacong_wang/article/details/106720863?spm=
 
 
 
-to setup the realtime kernel, please check this article https://zhuanlan.zhihu.com/p/675155576
+to setup the realtime kernel, please check [this article](https://zhuanlan.zhihu.com/p/675155576
 
-
+[) 
 
 # 3 .Check the hardware
 ## usb communication
@@ -232,14 +239,27 @@ related links:**https://www.cnblogs.com/rainbow-tan/p/17775385.html**
 ## Method2: build from Dockerfile
 
 ``` 
-cd docker
+# develop（开发）
+cd docker/develop
 
-docker build -t vc_image .
-docker run -it --name vc_devel \
+docker build -t vc_develop_image .
+docker run -it --name vc_develop \
+--privileged --network host \
+-v /dev:/dev -v /home/oem/ros_ws:/ros_ws \
+vc_develop_image \
+
+# deploy（部署）
+cd docker/deploy
+docker build -t vc_delpoy_image .
+docker run -it --name vc_deploy \
 --privileged --network host \
 -v /dev:/dev \
-vc_image \
+vc_delpoy_image \
 ```
+
+
+
+
 
 
 

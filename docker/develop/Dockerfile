@@ -1,21 +1,7 @@
 FROM ros:galactic-ros-base
 
-# create workspace
-RUN mkdir -p /ros_ws/src
-WORKDIR /ros_ws/
-
-# 换源, 代理
-RUN sed -i s@/archive.ubuntu.com/@/mirrors.ustc.edu.cn/@g /etc/apt/sources.list 
-# ENV HTTP_PROXY=http://127.0.0.1:7890
-# ENV HTTPS_PROXY=http://127.0.0.1:7890
-# ENV NO_PROXY=localhost,127.0.0.1
-
-# clone projects
-RUN cd src && git clone https://github.com/IRobot-Algorithm/Vision_Control.git --depth=1 
-
 # install dependencies and some tools
-RUN apt-get update && rosdep install --from-paths src --ignore-src -r -y && \
-    apt-get install wget htop vim can-utils libudev-dev libeigen3-dev usbutils -y && \
+RUN apt-get update && apt-get install wget htop vim can-utils libudev-dev libeigen3-dev usbutils -y && \
     sudo ln -s /usr/include/eigen3/Eigen /usr/include/Eigen && \
     rm -rf /var/lib/apt/lists/*
 
@@ -48,9 +34,6 @@ RUN echo 'export PS1="\[\e[36m\]\u\[\e[m\]@\[\e[32m\]\h\[\e[m\]:\[\e[33m\]\w\[\e
 # eval "$(register-python-argcomplete3 colcon)"\n'\
 # >> /root/.zshrc
 
-# 暂时不确定这样设置代理有没有用
-ENV HTTP_PROXY=http://127.0.0.1:7890
-ENV HTTPS_PROXY=http://127.0.0.1:7890
 # setup libusb
 WORKDIR /tmp 
 RUN wget https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
@@ -59,11 +42,5 @@ WORKDIR /tmp/libusb-1.0.26
 RUN sudo ./configure && \
     sudo make install
 
-# build
-WORKDIR /ros_ws/
-RUN . /opt/ros/galactic/setup.sh && colcon build 
+WORKDIR /
 
-# source entrypoint setup
-RUN sed --in-place --expression \
-      '$isource "/ros_ws/install/setup.bash"' \
-      /ros_entrypoint.sh
