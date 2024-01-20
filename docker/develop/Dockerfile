@@ -16,23 +16,9 @@ RUN echo 'export PS1="\[\e[36m\]\u\[\e[m\]@\[\e[32m\]\h\[\e[m\]:\[\e[33m\]\w\[\e
     echo "export LESS_TERMCAP_se=$'\E[0m'" >> /etc/bash.bashrc && \
     echo "export LESS_TERMCAP_so=$'\E[01;44;33m'" >> /etc/bash.bashrc && \
     echo "export LESS_TERMCAP_ue=$'\E[0m'" >> /etc/bash.bashrc && \
-    echo "export LESS_TERMCAP_us=$'\E[01;32m'" >> /etc/bash.bashrc \
-    echo "source /etc/bash.bashrc" >> ~/.bashrc
+    echo "export LESS_TERMCAP_us=$'\E[01;32m'" >> /etc/bash.bashrc && \
+    echo 'source "/etc/bash.bashrc"' >> ~/.bashrc
 
-# setup zsh
-# RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.2/zsh-in-docker.sh)" -- \
-#     -t jispwoso -p git \
-#     -p https://github.com/zsh-users/zsh-autosuggestions \
-#     -p https://github.com/zsh-users/zsh-syntax-highlighting && \
-#     chsh -s /bin/zsh && \
-#     rm -rf /var/lib/apt/lists/*
-
-# setup .zshrc
-# RUN echo 'export TERM=xterm-256color\n\
-# source /ros_ws/install/setup.zsh\n\
-# eval "$(register-python-argcomplete3 ros2)"\n\
-# eval "$(register-python-argcomplete3 colcon)"\n'\
-# >> /root/.zshrc
 
 # setup libusb
 WORKDIR /tmp 
@@ -43,4 +29,3 @@ RUN sudo ./configure && \
     sudo make install
 
 WORKDIR /
-

@@ -1,5 +1,5 @@
 短期可以解决：
-1.进入docker容器内的终端后字体全为白色，需要手动输入source /etc/bash.bashrc才能变彩色，需要将此过程自动化
+
 
 暂时不清楚的问题：
 1.skider_control包launch文件的参数路径问题
