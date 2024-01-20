@@ -5,3 +5,5 @@ log/*
 build
 install
 log
+
+src/skider_control/launch/skider_control.launch.py
