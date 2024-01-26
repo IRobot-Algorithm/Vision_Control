@@ -237,8 +237,14 @@ cd docker
 docker build -t vc_image .
 docker run -it --name vc_devel \
 --privileged --network host \
--v /dev:/dev \
+-v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
 vc_image \
+
+docker build -t vc_image1 .
+docker run -it --name vc_devel1 \
+--privileged --network host \
+-v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
+vc_image1 \
 ```
 
 
