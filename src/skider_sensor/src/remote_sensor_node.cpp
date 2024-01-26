@@ -42,7 +42,9 @@ RemoteSensorNode::RemoteSensorNode(const rclcpp::NodeOptions & options)
 
 
     RCLCPP_INFO(remote_sensor_node_->get_logger(), "Init Timer 1000Hz");
-    timer_1000Hz_ = remote_sensor_node_->create_wall_timer(1ms, std::bind(&RemoteSensorNode::loop_1000Hz, this));
+    // although the duration is 0.5ms, the frequency of /skider/joy/data callback is 1khz. it is weird
+    timer_1000Hz_ = remote_sensor_node_->create_wall_timer(0.5ms, std::bind(&RemoteSensorNode::loop_1000Hz, this));
+    // timer_1000Hz_ = remote_sensor_node_->create_wall_timer(1ms, std::bind(&RemoteSensorNode::loop_1000Hz, this));
 }
 
 void RemoteSensorNode::loop_1000Hz()

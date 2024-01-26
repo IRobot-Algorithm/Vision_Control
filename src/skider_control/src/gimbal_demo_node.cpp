@@ -194,7 +194,7 @@ inline double aim_limut(double angle_aim, double max, double min)
 void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg)
 {
 
-    //std::cout<<gimbal_controler_demo_node_->get_clock()->now().nanoseconds()<<std::endl;
+    std::cout<<"start"<<gimbal_controler_demo_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     gimbal_command_msg_.header.set__frame_id("Controler Gimbal Command");
     gimbal_command_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
@@ -250,7 +250,7 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
         }
             
 
-        pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3])*0.03), 0.25, -0.4);
+        pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3])*0.03), 0.43, -0.4);
         double pitch_w_goal = this->pid_pitch_remote_out_.calculate(pitch_angle_set_, imu_pitch_);
         double pitch_current = this->pid_pitch_remote_in_.calculate(pitch_w_goal, w_pitch_);
         gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
@@ -276,10 +276,9 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
     // rotor 
     if(msg.axes[4] > 0.9f && msg.buttons[2] == true){
         
-        // gimbal_command_msg_.rotor_current = 700;
         gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
-
-        //std::cout<<"1 "<<gimbal_controler_demo_node_->get_clock()->now().nanoseconds()<<std::endl;
+        // gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_) + 300 + rotor_goal_speed_ * 0.05;
+        gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
 
     }
     else if(msg.buttons[2] != true){
@@ -363,6 +362,8 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
     gimbal_command_msg_.ammol_current = 0;
     gimbal_command_msg_.rotor_current = 0;
     gimbal_command_msg_.follow_init = false;
+
+    std::cout<<"end  "<<gimbal_controler_demo_node_->get_clock()->now().nanoseconds()<<std::endl;
 
 }
 
