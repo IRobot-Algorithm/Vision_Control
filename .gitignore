@@ -7,3 +7,9 @@ install
 log
 
 src/skider_control/launch/skider_control.launch.py
+src/skider_hw/launch/skider_hw.launch.py
+src/skider_sensor/launch/skider_sensor.launch.py
+
+src/skider_control/config/params.yaml
+src/skider_hw/config/params.yaml
+src/skider_sensor/config/params.yaml
