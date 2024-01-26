@@ -255,8 +255,14 @@ cd docker/deploy
 docker build -t vc_delpoy_image .
 docker run -it --name vc_deploy \
 --privileged --network host \
--v /dev:/dev \
+-v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
 vc_delpoy_image \
+
+docker build -t vc_image1 .
+docker run -it --name vc_devel1 \
+--privileged --network host \
+-v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
+vc_image1 \
 ```
 
 注意运行开发的镜像时，我们使用`-v /home/oem/ros_ws:/ros_ws`将宿主机`/home/oem/ros_ws`下的内容映射到docker容器内`/ros_ws`处，因此我们只需修改`/home/oem/ros_ws`下的源码、参数，docker内的也会对应更改。
