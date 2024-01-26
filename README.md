@@ -53,13 +53,13 @@ sudo ./listdevs
 1d6b:0002 (bus 1, device 1)
 ```
 
-related links: https://blog.csdn.net/jiacong_wang/article/details/106720863?spm=1001.2014.3001.5502
+[related links]( https://blog.csdn.net/jiacong_wang/article/details/106720863?spm=1001.2014.3001.5502)
 
 
 
-to setup the realtime kernel, please check [this article](https://zhuanlan.zhihu.com/p/675155576
+to setup the realtime kernel, please check this [article]( https://zhuanlan.zhihu.com/p/675155576)
 
-[) 
+
 
 # 3 .Check the hardware
 ## usb communication
