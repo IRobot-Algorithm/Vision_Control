@@ -2,7 +2,14 @@
 
 # 1 .Code Structure
 
-├── firmware: stm32固件，根据IRbot2022电控组云台框架进行构建 https://github.com/Qylann/gimbal-standard  \
+├── firmware: stm32固件，根据[IRbot2022电控组云台框架]( https://github.com/Qylann/gimbal-standard)进行构建  \
+
+└──docker \
+&emsp;&emsp;├── deploy: 存放部署时使用的Dockerfile \
+&emsp;&emsp;├── develop: 存放开发时使用的Dockerfile \
+
+└──sh 存放常用脚本\
+
 └── src \
 &emsp;&emsp;├── skider_interface: skider自定义通信接口  \
 &emsp;&emsp;├── skider_hw: 底层通信包，存放底层接口通信节点 \
@@ -24,7 +31,7 @@
 
 ``` 
 # setup libusb
-https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
+wget https://github.com/libusb/libusb/releases/download/v1.0.26/libusb-1.0.26.tar.bz2 
 tar -jxvf libusb-1.0.26.tar.bz2 
 sudo apt update 
 sudo apt-get install libudev-dev
@@ -50,9 +57,9 @@ related links: https://blog.csdn.net/jiacong_wang/article/details/106720863?spm=
 
 
 
-to setup the realtime kernel, please check this article https://zhuanlan.zhihu.com/p/675155576
+to setup the realtime kernel, please check [this article](https://zhuanlan.zhihu.com/p/675155576
 
-
+[) 
 
 # 3 .Check the hardware
 ## usb communication
@@ -143,6 +150,7 @@ ros2 launch skider_hw skider_hw.launch.py
 
 ros2 launch skider_sensor skider_sensor.launch.py
 
+# 启动之前先检查launch文件内的参数路径
 ros2 launch skider_control skider_control.launch.py
 ```
 
@@ -192,7 +200,7 @@ docker run -it --name vc_devel \
 ghcr/shitoujie/vision_control \
 ```
 
-考虑到上述方法速度极慢，因此使用国内的镜像源进行docker pull
+考虑到上述方法连国内网络时速度极慢，因此可以参考[这篇文章](**https://www.cnblogs.com/rainbow-tan/p/17775385.html**)使用国内的镜像源进行docker pull
 
 ``` 
 # 在配置文件 /etc/docker/daemon.json 中加入：
@@ -225,20 +233,30 @@ ghcr.nju.edu.cn/shitoujie/vision_control \
 
 
 
-related links:**https://www.cnblogs.com/rainbow-tan/p/17775385.html**
-
-
-
 ## Method2: build from Dockerfile
 
 ``` 
-cd docker
+# 1.develop（开发）
+cd docker/develop
 
-docker build -t vc_image .
-docker run -it --name vc_devel \
+docker build -t vc_develop_image .
+docker run -it --name vc_develop \
+--privileged --network host \
+-v /dev:/dev -v /home/oem/ros_ws:/ros_ws \
+vc_develop_image \
+
+cd /ros_ws/Vision_Control
+colcon build
+# 启动之前先检查launch文件内的参数路径，尤其是skider_control.launch.py
+
+# 2.deploy（部署）
+cd docker/deploy
+
+docker build -t vc_delpoy_image .
+docker run -it --name vc_deploy \
 --privileged --network host \
 -v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
-vc_image \
+vc_delpoy_image \
 
 docker build -t vc_image1 .
 docker run -it --name vc_devel1 \
@@ -246,6 +264,14 @@ docker run -it --name vc_devel1 \
 -v /dev:/dev -v /home/oem/ros_ws/src:/ros_ws/src \
 vc_image1 \
 ```
+
+注意运行开发的镜像时，我们使用`-v /home/oem/ros_ws:/ros_ws`将宿主机`/home/oem/ros_ws`下的内容映射到docker容器内`/ros_ws`处，因此我们只需修改`/home/oem/ros_ws`下的源码、参数，docker内的也会对应更改。
+
+因此此处要**注意**将`/home/oem/ros_ws`**改为**你对应的路径。
+
+开发完毕后将宿主机下的代码提交github即可
+
+
 
 
 
