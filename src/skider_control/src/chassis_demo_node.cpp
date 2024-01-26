@@ -50,10 +50,10 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & o
         joy_subscribe_topic_name_, 10, std::bind(&ChassisControlerDemoNode::joy_msg_callback, this, std::placeholders::_1));
 
     chassis_state_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::ChassisState>(
-        "/skider/chassis_state", 10, std::bind(&ChassisControlerDemoNode::chassis_msg_callback, this, std::placeholders::_1));
+        "/skider/state/chassis", 10, std::bind(&ChassisControlerDemoNode::chassis_msg_callback, this, std::placeholders::_1));
 
     gimbal_state_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalState>(
-        "/skider/gimbal_state", 10, std::bind(&ChassisControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
+        "/skider/state/gimbal", 10, std::bind(&ChassisControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
         
     RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Subscribe Gimbal Command");
     gimbal_command_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalCommand>(

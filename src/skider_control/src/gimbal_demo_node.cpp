@@ -79,7 +79,7 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions & opt
 
 
     gimbal_state_subscription_ = gimbal_controler_demo_node_->create_subscription<skider_interface::msg::GimbalState>(
-        "/skider/gimbal_state", 10, std::bind(&GimbalControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
+        "/skider/state/gimbal", 10, std::bind(&GimbalControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
     
     autoaim_target_subscription_ = gimbal_controler_demo_node_->create_subscription<geometry_msgs::msg::Vector3>(
         "/rmos/autoaim/target", 10, std::bind(&GimbalControlerDemoNode::autoaim_msg_callback, this, std::placeholders::_1));
@@ -276,7 +276,9 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
     // rotor 
     if(msg.axes[4] > 0.9f && msg.buttons[2] == true){
         
+        // gimbal_command_msg_.rotor_current = 700;
         gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
+
         //std::cout<<"1 "<<gimbal_controler_demo_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     }
@@ -307,16 +309,19 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
         gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
 
 
-        // debug
-        gimbal_debug_msg_.header.stamp = gimbal_controler_demo_node_->get_clock()->now();
-        gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
-        gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
-        gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
-        gimbal_debug_msg_.yaw_w_state = w_yaw_;
-        gimbal_debug_msg_.pitch_angle_input = pitch_angle_set_;
-        gimbal_debug_msg_.pitch_angle_state = imu_pitch_;
-        gimbal_debug_msg_.pitch_w_input = pitch_w_goal;
-        gimbal_debug_msg_.pitch_w_state = w_pitch_;
+        // // debug
+        // gimbal_debug_msg_.header.stamp = gimbal_controler_demo_node_->get_clock()->now();
+        // gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
+        // gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
+        // gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
+        // gimbal_debug_msg_.yaw_w_state = w_yaw_;
+        // gimbal_debug_msg_.pitch_angle_input = pitch_angle_set_;
+        // gimbal_debug_msg_.pitch_angle_state = imu_pitch_;
+        // gimbal_debug_msg_.pitch_w_input = pitch_w_goal;
+        // gimbal_debug_msg_.pitch_w_state = w_pitch_;
+        // gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
+        // gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
+
 
     }
 
@@ -336,6 +341,20 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg
     }
     // debug_publisher_->publish(debug_msg_);
 
+    // debug
+    gimbal_debug_msg_.header.set__frame_id("debug_frame");
+    gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+    gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
+    gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
+    // gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
+    gimbal_debug_msg_.yaw_w_state = w_yaw_;
+    gimbal_debug_msg_.pitch_angle_input = pitch_angle_set_;
+    gimbal_debug_msg_.pitch_angle_state = imu_pitch_;
+    // gimbal_debug_msg_.pitch_w_input = pitch_w_goal;
+    gimbal_debug_msg_.pitch_w_state = w_pitch_;
+    gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
+    gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
+    gimbal_debug_publisher_->publish(gimbal_debug_msg_);
 
     gimbal_command_publisher_->publish(gimbal_command_msg_);
     gimbal_command_msg_.yaw_current = 0;

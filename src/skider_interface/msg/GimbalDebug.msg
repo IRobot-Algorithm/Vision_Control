@@ -10,4 +10,7 @@ float64 pitch_angle_state
 float64 pitch_w_input
 float64 pitch_w_state
 
+float64 rotor_speed_input
+float64 rotor_speed_state
+
 

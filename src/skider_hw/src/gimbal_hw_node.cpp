@@ -54,11 +54,11 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions & options)
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init chassis state Publisher");
     chassis_state_publisher_ = gimbal_hw_node_->create_publisher<skider_interface::msg::ChassisState>(
-        "/skider/chassis_state", 10);
+        "/skider/state/chassis", 10);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init gimbal state Publisher");
     gimbal_state_publisher_ = gimbal_hw_node_->create_publisher<skider_interface::msg::GimbalState>(
-        "/skider/gimbal_state", 10);
+        "/skider/state/gimbal", 10);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init device online Publisher");
     device_online_publisher_ = gimbal_hw_node_->create_publisher<skider_interface::msg::DeviceOnline>(
