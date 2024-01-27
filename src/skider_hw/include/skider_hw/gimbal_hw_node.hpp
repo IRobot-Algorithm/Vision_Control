@@ -4,6 +4,7 @@
 #include <string>
 #include <functional>
 #include <chrono>
+#include <thread>
 
 #include <rclcpp/rclcpp.hpp>
 #include <skider_interface/msg/sbus.hpp>
@@ -39,6 +40,7 @@ private:
 
     void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand &msg);
     void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand &msg);
+    void recevieCallBack();
 
     std::thread recevie_thread_;
 

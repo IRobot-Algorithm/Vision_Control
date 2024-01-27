@@ -76,11 +76,14 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions &options)
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Timer ");
 
     // the max actual frequency is 1000HZ. Therefore use duration less than 1000us is meaningless.
-    timer_10000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::loop_receive, this), receive_call_backgroup_);
+    // timer_10000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::loop_receive, this), receive_call_backgroup_);
     timer_1000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::loop_send, this), send_call_backgroup_);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Timer ");
     device_online_timer_ = gimbal_hw_node_->create_wall_timer(500ms, std::bind(&GimbalHWNode::loop_device_online, this), send_call_backgroup_);
+
+    RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Recevie Thread ");
+    this->recevie_thread_ = std::thread(&GimbalHWNode::recevieCallBack, this);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Transporter");
     transporter_ = std::make_shared<transporter_sdk::UsbcdcTransporter>(
@@ -105,7 +108,7 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions &options)
 
 void GimbalHWNode::loop_receive()
 {
-    std::cout << "start: " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
+    // std::cout << "start: " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
 
     //---usb---
     transport_package::GimbalHWReceivePackage package;
@@ -290,7 +293,7 @@ void GimbalHWNode::loop_receive()
     chassis_state_msg_.header.stamp = gimbal_hw_node_->get_clock()->now();
     chassis_state_publisher_->publish(chassis_state_msg_);
 
-    std::cout << "end:   " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
+    // std::cout << "end:   " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
 }
 
 void GimbalHWNode::loop_send()
@@ -398,6 +401,94 @@ void GimbalHWNode::loop_device_online()
     device_online_msg_.wheel4 = false;
 
     device_online_msg_.sensor = false;
+}
+
+void GimbalHWNode::recevieCallBack()
+{
+    //---can0---
+    while (rclcpp::ok())
+    {
+        std::cout << "start: " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
+
+        uint id = 0;
+        u_char buf[8] = {0}, buf_temp[2] = {0};
+        u_char dlc = 0;
+        // if (this->can0_.receive(id, buf, dlc) == transporter_sdk::Can::READ_ERROR)
+        // {
+        //     break;
+        // }
+        this->can0_.receive(id, buf, dlc);
+        switch (id)
+        {
+
+        case YAW:
+        {
+
+            buf_temp[0] = buf[1];
+            buf_temp[1] = buf[0];
+            memcpy(&(gimbal_state_msg_.yaw_angle), buf_temp, 2);
+            device_online_msg_.yaw_motor = true;
+            std::cout << "1" << std::endl;
+
+            break;
+        }
+        case PITCH:
+        {
+
+            buf_temp[0] = buf[1];
+            buf_temp[1] = buf[0];
+            memcpy(&(gimbal_state_msg_.pitch_angle), buf_temp, 2);
+            device_online_msg_.pitch_motor = true;
+            std::cout << "2" << std::endl;
+
+            break;
+        }
+        case AMMOR:
+        {
+
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&(gimbal_state_msg_.ammor_speed), buf_temp, 2);
+            // device_online_msg_.ammor_motor = true;
+            std::cout << "3" << std::endl;
+
+            break;
+        }
+        case AMMOL:
+        {
+
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&(gimbal_state_msg_.ammol_speed), buf_temp, 2);
+            // device_online_msg_.ammol_motor = true;
+            std::cout << "4" << std::endl;
+
+            break;
+        }
+        case ROTOR:
+        {
+
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&(gimbal_state_msg_.rotor_speed), buf_temp, 2);
+            // device_online_msg_.rotor_motor = true;
+            std::cout << "5" << std::endl;
+
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        gimbal_state_msg_.header.frame_id = "gimbal_state_";
+        gimbal_state_msg_.header.stamp = gimbal_hw_node_->get_clock()->now();
+        gimbal_state_publisher_->publish(gimbal_state_msg_);
+
+        std::cout << "end:   " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+
+    }
 }
 
 int main(int argc, char *argv[])
