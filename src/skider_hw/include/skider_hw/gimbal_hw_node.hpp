@@ -15,7 +15,6 @@
 
 #include <sensor_msgs/msg/imu.hpp>
 
-
 #include "usbcdc_transporter.hpp"
 #include "transport_package.h"
 #include "can.hpp"
@@ -25,10 +24,12 @@ using namespace std::chrono_literals;
 class GimbalHWNode
 {
 public:
-    explicit GimbalHWNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
-    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() {
+    explicit GimbalHWNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
+    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface()
+    {
         return gimbal_hw_node_->get_node_base_interface();
     }
+
 private:
     rclcpp::Node::SharedPtr gimbal_hw_node_;
 
@@ -36,8 +37,8 @@ private:
     void loop_send();
     void loop_device_online();
 
-    void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand & msg);
-    void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand & msg);
+    void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand &msg);
+    void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand &msg);
 
     std::thread recevie_thread_;
 
@@ -86,14 +87,8 @@ private:
     u_char buf_chassis_[8];
 
 public:
-
     // ---msg---
     skider_interface::msg::GimbalState gimbal_state_msg_;
     skider_interface::msg::ChassisState chassis_state_msg_;
     skider_interface::msg::DeviceOnline device_online_msg_;
-
-    
-
-    
 };
-
