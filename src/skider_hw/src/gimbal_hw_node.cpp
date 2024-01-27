@@ -365,7 +365,7 @@ void GimbalHWNode::chassis_command_msg_callback(const skider_interface::msg::Cha
         buf_chassis_[2*i+1] = (u_char)(msg.current[i]);
 
     }
-    stamp_.stamp=msg.header.stamp;
+    // stamp_.stamp=msg.header.stamp;
 
 }
 

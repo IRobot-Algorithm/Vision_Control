@@ -30,6 +30,8 @@ public:
         return gimbal_hw_node_->get_node_base_interface();
     }
 private:
+    rclcpp::Node::SharedPtr gimbal_hw_node_;
+
     void loop_receive();
     void loop_send();
     void loop_device_online();
@@ -37,14 +39,10 @@ private:
     void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand & msg);
     void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand & msg);
 
-
-
-private:
+    std::thread recevie_thread_;
 
     rclcpp::CallbackGroup::SharedPtr send_call_backgroup_;
     rclcpp::CallbackGroup::SharedPtr receive_call_backgroup_;
-
-    rclcpp::Node::SharedPtr gimbal_hw_node_;
 
     // ---timer---
     rclcpp::TimerBase::SharedPtr timer_10000Hz_;
@@ -62,19 +60,13 @@ private:
     rclcpp::Subscription<skider_interface::msg::GimbalCommand>::SharedPtr gimbal_command_subscription_;
     rclcpp::Subscription<skider_interface::msg::ChassisCommand>::SharedPtr chassis_command_subscription_;
 
-
+    // ---transporter---
     std::shared_ptr<transporter_sdk::TransporterInterface> transporter_;
 
-
-
-
-private:
-
-
+    // ---debug---
     std_msgs::msg::Header stamp_;
 
-private:
-    // params
+    // ---params---
     std::string imu_raw_publish_topic_name_;
     std::string sbus_publish_topic_name_;
     int gimbal_interface_usb_vid_;
@@ -84,18 +76,18 @@ private:
     int gimbal_interface_usb_read_timeout_;
     int gimbal_interface_usb_write_timeout_;
 
+    // ---can---
     transporter_sdk::Can can0_{transporter_sdk::Can(0)};
     transporter_sdk::Can can1_{transporter_sdk::Can(1)};
 
-
-
+    // ---buffer---
     u_char buf_gimbal_[8];
     u_char buf_shooter_[8];
     u_char buf_chassis_[8];
 
 public:
-    // skider_interface::msg::ChassisState chassis_state_msg_;
-    double speed_[4];
+
+    // ---msg---
     skider_interface::msg::GimbalState gimbal_state_msg_;
     skider_interface::msg::ChassisState chassis_state_msg_;
     skider_interface::msg::DeviceOnline device_online_msg_;
