@@ -301,7 +301,7 @@ void GimbalHWNode::loop_send()
 
     // if(device_online_msg_.whole_robot){
 
-    std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
+    // std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     // std::cout<<"send GIMBAL_COMMAND: "<<(int)buf_gimbal_[0]<<(int)buf_gimbal_[1]<<(int)buf_gimbal_[2]<<(int)buf_gimbal_[3]<<std::endl;
     // std::cout<<"send CHASSIS_COMMAND: "<<(int)buf_chassis_[0]<<(int)buf_chassis_[1]<<(int)buf_chassis_[2]<<(int)buf_chassis_[3]<<std::endl;
@@ -321,7 +321,7 @@ void GimbalHWNode::loop_send()
     buf_gimbal_[8] = {0};
     buf_shooter_[8] = {0};
     buf_chassis_[8] = {0};
-    std::cout<<"end:     "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
+    // std::cout<<"end:     "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     // }
     // if(device_online_msg_.whole_robot){

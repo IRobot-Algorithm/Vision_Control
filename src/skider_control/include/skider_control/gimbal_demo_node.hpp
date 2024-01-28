@@ -14,13 +14,14 @@
 
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/joy.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 
 #include <skider_interface/msg/gimbal_command.hpp>
 #include <skider_interface/msg/gimbal_debug.hpp>
 #include <skider_interface/msg/imu.hpp>
 #include <skider_interface/msg/gimbal_state.hpp>
-
-#include <geometry_msgs/msg/vector3.hpp>
+// #include <../../skider_utils/include/utils.hpp>
+#include <skider_utils/utils.hpp>
 
 using namespace std::chrono_literals;
 
@@ -167,6 +168,11 @@ private:
     double ammo_goal_speed_, rotor_goal_speed_;
     
     double yaw_init_finished_;
+
+    // ---joy command---
+    RobotState robot_state_ = RobotState::ChassisWeakGimbalWeak;
+    bool shoot_request_ = false;
+    bool spin_request_ = false;
 
 public:
     skider_interface::msg::GimbalCommand gimbal_command_msg_;
