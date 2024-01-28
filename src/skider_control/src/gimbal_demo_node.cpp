@@ -94,7 +94,7 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
     follow_init_timer_ = gimbal_controler_demo_node_->create_wall_timer(1000ms, [this]()
                                                                         { follow_init_ = true; });
     calculate_call_backgroup_ = gimbal_controler_demo_node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-    calculate_pid_timer_ = gimbal_controler_demo_node_->create_wall_timer(1ms, std::bind(&GimbalControlerDemoNode::loop_calculate, this), calculate_call_backgroup_);
+    // calculate_pid_timer_ = gimbal_controler_demo_node_->create_wall_timer(1ms, std::bind(&GimbalControlerDemoNode::loop_calculate, this), calculate_call_backgroup_);
 
     RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
 
@@ -193,115 +193,122 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 
     // std::cout << "start" << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
 
-    // gimbal_command_msg_.header.set__frame_id("Controler Gimbal Command");
-    // gimbal_command_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
-    if(msg.buttons[3] == true){
-        if(msg.buttons[0] == true){
+    if (msg.buttons[3] == true)
+    {
+        if (msg.buttons[0] == true)
+        {
             robot_state_ = RobotState::ChassisWeakGimbalWeak;
         }
-        if(msg.buttons[1] == true){
+        if (msg.buttons[1] == true)
+        {
             robot_state_ = RobotState::ChassisWeakGimbalJoy;
         }
-        if(msg.buttons[2] == true){
+        if (msg.buttons[2] == true)
+        {
             robot_state_ = RobotState::ChassisWeakGimbalJoyRotor;
-        }    
+        }
     }
-    if(msg.buttons[4] == true){
-        if(msg.buttons[0] == true){
+    if (msg.buttons[4] == true)
+    {
+        if (msg.buttons[0] == true)
+        {
             robot_state_ = RobotState::ChassisJoyGimbalWeak;
         }
-        if(msg.buttons[1] == true){
+        if (msg.buttons[1] == true)
+        {
             robot_state_ = RobotState::ChassisJoyGimbalJoy;
         }
-        if(msg.buttons[2] == true){
+        if (msg.buttons[2] == true)
+        {
             robot_state_ = RobotState::ChassisJoyGimbalJoyRotor;
-        }    
+        }
     }
-    if(msg.buttons[5] == true){
-        if(msg.buttons[0] == true){
+    if (msg.buttons[5] == true)
+    {
+        if (msg.buttons[0] == true)
+        {
             robot_state_ = RobotState::AutoaimGimbalWeak;
         }
-        if(msg.buttons[1] == true){
+        if (msg.buttons[1] == true)
+        {
             robot_state_ = RobotState::AutoaimGimbalAutoaim;
         }
-        if(msg.buttons[2] == true){
+        if (msg.buttons[2] == true)
+        {
             robot_state_ = RobotState::AutoaimGimbalAutoaimRotor;
-        }    
+        }
     }
-    std::cout << "RobotState" << (int)robot_state_ << std::endl;
+    // std::cout << "RobotState" << (int)robot_state_ << std::endl;
 
-    if(msg.axes[4] > 0.9f){
+    if (msg.axes[4] > 0.9f)
+    {
         shoot_request_ = true;
     }
-    if(msg.axes[4] < 0.9f){
+    if (msg.axes[4] < 0.9f)
+    {
         shoot_request_ = false;
     }
 
-
     // 云台有力
-    // if ((msg.buttons[1] == true) || (msg.buttons[2] == true) || (msg.buttons[4] != true))
-    // {
+    if ((msg.buttons[1] == true) || (msg.buttons[2] == true) || (msg.buttons[4] != true))
+    {
 
-        // if (follow_init_ != true)
-        // {
+        if (follow_init_ != true)
+        {
 
-        //     // 云台转到底盘处
-        //     double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_, 2);
-        //     double yaw_init = yaw_angle_ + yaw_relative;
+            // 云台转到底盘处
+            double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_, 2);
+            double yaw_init = yaw_angle_ + yaw_relative;
 
-        //     double yaw_w_goal = this->pid_yaw_init_out_.calculate(yaw_init, yaw_angle_);
-        //     double yaw_current = this->pid_yaw_init_in_.calculate(yaw_w_goal, w_yaw_);
-        //     // gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
+            double yaw_w_goal = this->pid_yaw_init_out_.calculate(yaw_init, yaw_angle_);
+            double yaw_current = this->pid_yaw_init_in_.calculate(yaw_w_goal, w_yaw_);
+            gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
 
-        //     yaw_angle_set_ = imu_yaw_;
-        //     // gimbal_command_msg_.follow_init = follow_init_;
-        // }
-        // else
-        // {
+            yaw_angle_set_ = imu_yaw_;
+            gimbal_command_msg_.follow_init = follow_init_;
+        }
+        else
+        {
+            yaw_angle_set_ = aim_loop(yaw_angle_set_ + (-msg.axes[2]) * 0.01);
+            double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
+            yaw_angle_set_ = imu_yaw_ + yaw_relative;
 
-        //     yaw_angle_set_ = aim_loop(yaw_angle_set_ + (-msg.axes[2]) * 0.01);
+            double yaw_w_goal = this->pid_yaw_remote_out_.calculate(yaw_angle_set_, imu_yaw_);
+            double yaw_current = this->pid_yaw_remote_in_.calculate(yaw_w_goal, w_yaw_);
+            gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
 
-        //     double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
-        //     yaw_angle_set_ = imu_yaw_ + yaw_relative;
-        //     // std::cout<<"yaw_angle_set_: "<<yaw_angle_set_<<" imu_yaw_: "<<imu_yaw_<<" yaw_relative: "<<yaw_relative<<std::endl;
+            gimbal_command_msg_.follow_init = true;
+        }
 
-        //     double yaw_w_goal = this->pid_yaw_remote_out_.calculate(yaw_angle_set_, imu_yaw_);
-        //     double yaw_current = this->pid_yaw_remote_in_.calculate(yaw_w_goal, w_yaw_);
-
-        //     // gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
-
-        //     // gimbal_command_msg_.follow_init = true;
-        // }
-
-        // pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3]) * 0.03), 0.43, -0.4);
-        // double pitch_w_goal = this->pid_pitch_remote_out_.calculate(pitch_angle_set_, imu_pitch_);
-        // double pitch_current = this->pid_pitch_remote_in_.calculate(pitch_w_goal, w_pitch_);
-        // // gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
-    // }
+        pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3]) * 0.03), 0.43, -0.4);
+        double pitch_w_goal = this->pid_pitch_remote_out_.calculate(pitch_angle_set_, imu_pitch_);
+        double pitch_current = this->pid_pitch_remote_in_.calculate(pitch_w_goal, w_pitch_);
+        gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
+    }
 
     // 摩擦轮转动TOCHECK
-    // if (msg.buttons[2] == true)
-    // {
+    if (msg.buttons[2] == true)
+    {
+        if (ammo_enable_)
+        {
+            gimbal_command_msg_.ammor_current = this->pid_ammor_.calculate(ammo_goal_speed_, ammor_speed_);
+            gimbal_command_msg_.ammor_current = (int16_t)(speed_limit(gimbal_command_msg_.ammor_current, 30000));
+            gimbal_command_msg_.ammol_current = this->pid_ammol_.calculate(-ammo_goal_speed_, ammol_speed_);
+            gimbal_command_msg_.ammol_current = (int16_t)(speed_limit(gimbal_command_msg_.ammol_current, 30000));
 
-    //     if (ammo_enable_)
-    //     {
-    //         gimbal_command_msg_.ammor_current = this->pid_ammor_.calculate(ammo_goal_speed_, ammor_speed_);
-    //         gimbal_command_msg_.ammol_current = this->pid_ammol_.calculate(-ammo_goal_speed_, ammol_speed_);
-    //     }
-    // }
+        }
+    }
     // rotor
-    // if (msg.axes[4] > 0.9f && msg.buttons[2] == true)
-    // {
-    //     rotor_enable_ = true;
-    //     // gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
-    //     // // gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_) + 300 + rotor_goal_speed_ * 0.05;
-    //     // gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
-    // }
-    // else if (msg.buttons[2] != true)
-    // {
-
-    //     gimbal_command_msg_.rotor_current = 0;
-    // }
+    if (msg.axes[4] > 0.9f && msg.buttons[2] == true)
+    {
+        rotor_enable_ = true;
+        gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
+        gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
+    }
+    else if (msg.buttons[2] != true)
+    {
+        gimbal_command_msg_.rotor_current = 0;
+    }
 
     // auto aim
     // if (msg.buttons[4] == true)
@@ -337,33 +344,30 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 
         follow_init_timer_->reset();
         follow_init_ = false;
-
         rotor_enable_ = false;
-
     }
-    // debug_publisher_->publish(debug_msg_);
 
     // debug
-    // gimbal_debug_msg_.header.set__frame_id("debug_frame");
-    // gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
-    // gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
-    // gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
-    // // gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
-    // gimbal_debug_msg_.yaw_w_state = w_yaw_;
-    // gimbal_debug_msg_.pitch_angle_input = pitch_angle_set_;
-    // gimbal_debug_msg_.pitch_angle_state = imu_pitch_;
-    // // gimbal_debug_msg_.pitch_w_input = pitch_w_goal;
-    // gimbal_debug_msg_.pitch_w_state = w_pitch_;
-    // gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
-    // gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
-    // gimbal_debug_publisher_->publish(gimbal_debug_msg_);
+    gimbal_debug_msg_.header.set__frame_id("debug_frame");
+    gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+    gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
+    gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
+    // gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
+    gimbal_debug_msg_.yaw_w_state = w_yaw_;
+    gimbal_debug_msg_.pitch_angle_input = pitch_angle_set_;
+    gimbal_debug_msg_.pitch_angle_state = imu_pitch_;
+    // gimbal_debug_msg_.pitch_w_input = pitch_w_goal;
+    gimbal_debug_msg_.pitch_w_state = w_pitch_;
+    gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
+    gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
+    gimbal_debug_publisher_->publish(gimbal_debug_msg_);
 
-    // gimbal_command_publisher_->publish(gimbal_command_msg_);
-    // gimbal_command_msg_.yaw_current = 0;
-    // gimbal_command_msg_.pitch_current = 0;
-    // gimbal_command_msg_.ammor_current = 0;
-    // gimbal_command_msg_.ammol_current = 0;
-    // gimbal_command_msg_.rotor_current = 0;
+    gimbal_command_publisher_->publish(gimbal_command_msg_);
+    gimbal_command_msg_.yaw_current = 0;
+    gimbal_command_msg_.pitch_current = 0;
+    gimbal_command_msg_.ammor_current = 0;
+    gimbal_command_msg_.ammol_current = 0;
+    gimbal_command_msg_.rotor_current = 0;
     // gimbal_command_msg_.follow_init = false;
 
     // std::cout << "end  " << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
@@ -403,39 +407,39 @@ void GimbalControlerDemoNode::autoaim_msg_callback(const geometry_msgs::msg::Vec
 
 void GimbalControlerDemoNode::loop_calculate()
 {
+
     // std::cout << "start" << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
-    if(rotor_enable_){
+    // if(rotor_enable_){
 
-        std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
+    //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
 
-        gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
-        std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
+    //     gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
+    //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
 
-        gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
-        // gimbal_command_publisher_->publish(gimbal_command_msg_);
-        gimbal_command_msg_.yaw_current = 0;
-        gimbal_command_msg_.pitch_current = 0;
-        gimbal_command_msg_.ammor_current = 0;
-        gimbal_command_msg_.ammol_current = 0;
-        // gimbal_command_msg_.rotor_current = 0;
-        gimbal_command_msg_.follow_init = false;
+    //     gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
+    //     // gimbal_command_publisher_->publish(gimbal_command_msg_);
+    //     gimbal_command_msg_.yaw_current = 0;
+    //     gimbal_command_msg_.pitch_current = 0;
+    //     gimbal_command_msg_.ammor_current = 0;
+    //     gimbal_command_msg_.ammol_current = 0;
+    //     // gimbal_command_msg_.rotor_current = 0;
+    //     gimbal_command_msg_.follow_init = false;
 
-    }
-    else{
-        gimbal_command_msg_.rotor_current = 0;
+    // }
+    // else{
+    //     gimbal_command_msg_.rotor_current = 0;
 
-    }
-    gimbal_command_msg_.header.set__frame_id("Controler Gimbal Command");
-    gimbal_command_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
-    gimbal_command_publisher_->publish(gimbal_command_msg_);
+    // }
+    // gimbal_command_msg_.header.set__frame_id("Controler Gimbal Command");
+    // gimbal_command_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+    // gimbal_command_publisher_->publish(gimbal_command_msg_);
 
-    gimbal_debug_msg_.header.set__frame_id("debug_frame");
-    gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
-    gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
-    gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
-    gimbal_debug_publisher_->publish(gimbal_debug_msg_);
-    // std::cout << "end  " << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
-
+    // gimbal_debug_msg_.header.set__frame_id("debug_frame");
+    // gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+    // gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
+    // gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
+    // gimbal_debug_publisher_->publish(gimbal_debug_msg_);
+    // // std::cout << "end  " << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
 }
 
 int main(int argc, char *argv[])

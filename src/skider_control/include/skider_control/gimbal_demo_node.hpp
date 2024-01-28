@@ -122,7 +122,7 @@ private:
 
     rclcpp::CallbackGroup::SharedPtr calculate_call_backgroup_;
     rclcpp::TimerBase::SharedPtr follow_init_timer_;
-    rclcpp::TimerBase::SharedPtr calculate_pid_timer_;
+    // rclcpp::TimerBase::SharedPtr calculate_pid_timer_;
 
 private:
     // imu
@@ -166,8 +166,6 @@ private:
     bool rotor_enable_ = false;
     double yaw_zero_angle_;
     double ammo_goal_speed_, rotor_goal_speed_;
-    
-    double yaw_init_finished_;
 
     // ---joy command---
     RobotState robot_state_ = RobotState::ChassisWeakGimbalWeak;
