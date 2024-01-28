@@ -1,14 +1,13 @@
 #include "chassis_demo_node.hpp"
 
-ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & options)
+ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &options)
 {
     chassis_controler_demo_node_ = std::make_shared<rclcpp::Node>("chassis_controler_node", options);
     RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Node Begin");
 
-
-    //kp, ki, kd
-    std::map<std::string, std::vector<double>> pid_params {
-        {"pid1", {0.0, 0.0, 0,0}},
+    // kp, ki, kd
+    std::map<std::string, std::vector<double>> pid_params{
+        {"pid1", {0.0, 0.0, 0, 0}},
         {"pid2", {0.0, 0.0, 0.0}},
         {"pid3", {0.0, 0.0, 0.0}},
         {"pid4", {0.0, 0.0, 0.0}},
@@ -30,13 +29,13 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & o
     chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid4", pid4_params_);
     chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid_follow", pid_follow_params_);
 
-    std::cout<<" pid1_params_[0]: "<<pid1_params_[0]<<" pid1_params_[1]: "<<pid1_params_[1]<<" pid1_params_[2]: "<<pid1_params_[2]<<std::endl;
+    std::cout << " pid1_params_[0]: " << pid1_params_[0] << " pid1_params_[1]: " << pid1_params_[1] << " pid1_params_[2]: " << pid1_params_[2] << std::endl;
 
     chassis_controler_demo_node_->declare_parameters("", params);
     chassis_controler_demo_node_->get_parameter<double>("spin_w", spin_w_);
     chassis_controler_demo_node_->get_parameter<double>("yaw_zero_angle", yaw_zero_angle_);
-    
-    std::cout<<" spin_w_: "<<spin_w_<<" yaw_zero_angle_: "<<yaw_zero_angle_<<std::endl;
+
+    std::cout << " spin_w_: " << spin_w_ << " yaw_zero_angle_: " << yaw_zero_angle_ << std::endl;
 
     // ---subscription---
     std::string imu_subscribe_topic_name_("/skider/imu/data");
@@ -54,7 +53,7 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & o
 
     gimbal_state_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalState>(
         "/skider/state/gimbal", 10, std::bind(&ChassisControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
-        
+
     RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Subscribe Gimbal Command");
     gimbal_command_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalCommand>(
         "/skider/command/gimbal", 10, std::bind(&ChassisControlerDemoNode::gimbal_command_msg_callback, this, std::placeholders::_1));
@@ -64,8 +63,6 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & o
     RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Init Chassis Command Publisher : ");
     chassis_command_publisher_ = chassis_controler_demo_node_->create_publisher<skider_interface::msg::ChassisCommand>(
         chassis_command_publish_topic_name_, 10);
-
-
 
     // ---debug---
     // std::string chassis_debug_publisg_topic_name_("/skider/debug");
@@ -95,16 +92,16 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions & o
     pid_vec_.push_back(pid2);
     pid_vec_.push_back(pid3);
     pid_vec_.push_back(pid4);
-
-
 }
 
 inline double speed_limit(double input, double max)
 {
-    if (input > max) {
+    if (input > max)
+    {
         return max;
     }
-    else if (input < -max) {
+    else if (input < -max)
+    {
         return -max;
     }
     return input;
@@ -114,11 +111,13 @@ inline double get_relative_angle(double angle_aim, double angle_ref)
 {
     double reletive_angle = angle_aim - angle_ref;
 
-    while (reletive_angle > 4096) {
-        reletive_angle -= 2*4096;
+    while (reletive_angle > 4096)
+    {
+        reletive_angle -= 2 * 4096;
     }
-    while (reletive_angle < -4096) {
-        reletive_angle += 2*4096;
+    while (reletive_angle < -4096)
+    {
+        reletive_angle += 2 * 4096;
     }
 
     return reletive_angle;
@@ -126,11 +125,13 @@ inline double get_relative_angle(double angle_aim, double angle_ref)
 
 inline double aim_loop(double angle_aim)
 {
-    while (angle_aim > M_PI) {
-        angle_aim -= 2*M_PI;
+    while (angle_aim > M_PI)
+    {
+        angle_aim -= 2 * M_PI;
     }
-    while (angle_aim < -M_PI) {
-        angle_aim += 2*M_PI;
+    while (angle_aim < -M_PI)
+    {
+        angle_aim += 2 * M_PI;
     }
 
     return angle_aim;
@@ -138,16 +139,17 @@ inline double aim_loop(double angle_aim)
 
 inline double aim_limut(double angle_aim, double max, double min)
 {
-    while (angle_aim > max) {
+    while (angle_aim > max)
+    {
         return max;
     }
-    while (angle_aim < min) {
+    while (angle_aim < min)
+    {
         return min;
     }
 
     return angle_aim;
 }
-
 
 void ChassisControlerDemoNode::loop_10000Hz()
 {
@@ -155,94 +157,80 @@ void ChassisControlerDemoNode::loop_10000Hz()
     // command send
     skider_interface::msg::ChassisCommand chassis_msg;
     chassis_msg.header.set__frame_id("Controler Chassis Command");
-    //chassis_msg.header.set__stamp(chassis_controler_demo_node_->get_clock()->now());
-    chassis_msg.header.stamp=stamp_.stamp;
+    chassis_msg.header.set__stamp(chassis_controler_demo_node_->get_clock()->now());
+    chassis_msg.header.stamp = stamp_.stamp;
     double chassis_current[4];
 
     // 底盘有力
-    if ((button1_ == true)  ||  (button2_ == true)){       
-
-        if(follow_init_ != true){
-
-            for(int i=0; i<4; i++){
-            
-            chassis_msg.current.push_back(0);
+    if ((button1_ == true) || (button2_ == true))
+    {
+        if (follow_init_ != true)
+        {
+            for (int i = 0; i < 4; i++)
+            {
+                chassis_msg.current.push_back(0);
             }
-
         }
-        else{
-
-
+        else
+        {
             double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_);
             double yaw_angle_set_ = yaw_angle_ + yaw_relative;
 
-            if(axes4_ < -0.9){
-
+            if (axes4_ < -0.9)
+            {
                 follow_w_ = spin_w_;
             }
-            else{
-
+            else
+            {
                 follow_w_ = pid_follow_.calculate(yaw_angle_set_, yaw_angle_);
-
             }
-            //std::cout<<"follow_w_: "<<follow_w_<<std::endl;
-
+            std::cout<<"follow_w_: "<<follow_w_<<std::endl;
 
             double delta_yaw = yaw_relative / 4096 * M_PI;
-            vx_solve_ = vx_set_*cos(delta_yaw) - vy_set_*sin(delta_yaw);
-            vy_solve_ = -vx_set_*sin(delta_yaw) + vy_set_*cos(delta_yaw);
-
-
-
+            vx_solve_ = vx_set_ * cos(delta_yaw) - vy_set_ * sin(delta_yaw);
+            vy_solve_ = -vx_set_ * sin(delta_yaw) + vy_set_ * cos(delta_yaw);
 
             chassis_speed_[0] = (-vx_solve_ - vy_solve_ + follow_w_);
             chassis_speed_[1] = (vx_solve_ - vy_solve_ + follow_w_);
             chassis_speed_[2] = (vx_solve_ + vy_solve_ + follow_w_);
             chassis_speed_[3] = (-vx_solve_ + vy_solve_ + follow_w_);
 
-
-            for(int i=0; i<4; i++){
-
+            for (int i = 0; i < 4; i++)
+            {
                 chassis_current[i] = pid_vec_[i].calculate_robust(chassis_speed_[i], chassis_state_[i]);
                 chassis_current[i] = speed_limit(chassis_current[i], 16384);
                 chassis_msg.current.push_back(chassis_current[i]);
-
             }
-
         }
-
     }
     // 底盘无力
-    else{
-
-        for(int i=0; i<4; i++){
+    else
+    {
+        for (int i = 0; i < 4; i++)
+        {
             chassis_msg.current.push_back(0);
-
         }
     }
     chassis_command_publisher_->publish(chassis_msg);
     // debug_msg_.header.stamp = chassis_controler_demo_node_->get_clock()->now();
     // debug_msg_.header.frame_id = "debug";
-
-
 }
 
-
-void ChassisControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & msg)
+void ChassisControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 {
-    button1_= msg.buttons[1];
-    button2_= msg.buttons[2];
-    if ((msg.buttons[1] == true)  ||  (msg.buttons[2] == true)){       
+    button1_ = msg.buttons[1];
+    button2_ = msg.buttons[2];
+    if ((msg.buttons[1] == true) || (msg.buttons[2] == true))
+    {
 
-        vx_set_ = msg.axes[1]*6000;
-        vy_set_ = -msg.axes[0]*6000;
-
+        vx_set_ = msg.axes[1] * 6000;
+        vy_set_ = -msg.axes[0] * 6000;
     }
-    else{
-       
+    else
+    {
 
-        vx_set_ =0;
-        vy_set_ =0;
+        vx_set_ = 0;
+        vy_set_ = 0;
     }
     axes4_ = msg.axes[4];
 
@@ -252,50 +240,41 @@ void ChassisControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy & ms
     // debug_publisher_->publish(debug_msg_);
 }
 
-
-void ChassisControlerDemoNode::imu_msg_callback(const skider_interface::msg::Imu & msg)
+void ChassisControlerDemoNode::imu_msg_callback(const skider_interface::msg::Imu &msg)
 {
     imu_yaw_ = msg.imu_yaw;
-
-
-
 }
 
-void ChassisControlerDemoNode::chassis_msg_callback(const skider_interface::msg::ChassisState & msg)
+void ChassisControlerDemoNode::chassis_msg_callback(const skider_interface::msg::ChassisState &msg)
 {
-    stamp_=msg.header;
+    stamp_ = msg.header;
     chassis_state_[0] = msg.speed[0];
     chassis_state_[1] = msg.speed[1];
     chassis_state_[2] = msg.speed[2];
     chassis_state_[3] = msg.speed[3];
-
-
 }
 
-void ChassisControlerDemoNode::gimbal_msg_callback(const skider_interface::msg::GimbalState & msg)
+void ChassisControlerDemoNode::gimbal_msg_callback(const skider_interface::msg::GimbalState &msg)
 {
 
-    //TOCHECK
-    
+    // TOCHECK
+
     yaw_angle_ = msg.yaw_angle;
 
-    //不用    
+    // 不用
     pitch_angle_ = msg.pitch_angle;
     ammor_speed_ = msg.ammor_speed;
     ammol_speed_ = msg.ammol_speed;
     rotor_speed_ = msg.rotor_speed;
-
-
 }
 
-void ChassisControlerDemoNode::gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand & msg){
+void ChassisControlerDemoNode::gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand &msg)
+{
 
     follow_init_ = msg.follow_init;
-
-
 }
 
-int main(int argc, char * argv[])
+int main(int argc, char *argv[])
 {
     rclcpp::init(argc, argv);
     auto chassis_controler_demo_node = std::make_shared<ChassisControlerDemoNode>();
@@ -303,5 +282,3 @@ int main(int argc, char * argv[])
     rclcpp::shutdown();
     return 0;
 }
-
-
