@@ -40,9 +40,11 @@ private:
 
     void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand &msg);
     void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand &msg);
-    void recevieCallBack();
+    void gimbalRecevieCallBack();
+    void chassisRecevieCallBack();
 
-    std::thread recevie_thread_;
+    std::thread gimbal_recevie_thread_;
+    std::thread chassis_recevie_thread_;
 
     rclcpp::CallbackGroup::SharedPtr send_call_backgroup_;
     rclcpp::CallbackGroup::SharedPtr receive_call_backgroup_;

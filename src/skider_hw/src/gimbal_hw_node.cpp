@@ -83,7 +83,8 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions &options)
     device_online_timer_ = gimbal_hw_node_->create_wall_timer(500ms, std::bind(&GimbalHWNode::loop_device_online, this), send_call_backgroup_);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Recevie Thread ");
-    this->recevie_thread_ = std::thread(&GimbalHWNode::recevieCallBack, this);
+    this->gimbal_recevie_thread_ = std::thread(&GimbalHWNode::gimbalRecevieCallBack, this);
+    this->chassis_recevie_thread_ = std::thread(&GimbalHWNode::chassisRecevieCallBack, this);
 
     RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Transporter");
     transporter_ = std::make_shared<transporter_sdk::UsbcdcTransporter>(
@@ -144,87 +145,6 @@ void GimbalHWNode::loop_receive()
         sbus_publisher_->publish(sbus);
     }
 
-    //---can0---
-
-    // uint id = 0;
-    // u_char buf[8] = {0}, buf_temp[2] = {0};
-    // u_char dlc = 0;
-
-    // while (1)
-    // {
-
-    //     if (this->can0_.receive(id, buf, dlc) == transporter_sdk::Can::READ_ERROR)
-    //     {
-
-    //         break;
-    //     }
-
-    //     switch (id)
-    //     {
-
-    //     case YAW:
-    //     {
-
-    //         buf_temp[0] = buf[1];
-    //         buf_temp[1] = buf[0];
-    //         memcpy(&(gimbal_state_msg_.yaw_angle), buf_temp, 2);
-    //         device_online_msg_.yaw_motor = true;
-    //         std::cout << "1" << std::endl;
-
-    //         break;
-    //     }
-    //     case PITCH:
-    //     {
-
-    //         buf_temp[0] = buf[1];
-    //         buf_temp[1] = buf[0];
-    //         memcpy(&(gimbal_state_msg_.pitch_angle), buf_temp, 2);
-    //         device_online_msg_.pitch_motor = true;
-    //         std::cout << "2" << std::endl;
-
-    //         break;
-    //     }
-    //     case AMMOR:
-    //     {
-
-    //         buf_temp[0] = buf[3];
-    //         buf_temp[1] = buf[2];
-    //         memcpy(&(gimbal_state_msg_.ammor_speed), buf_temp, 2);
-    //         // device_online_msg_.ammor_motor = true;
-    //         std::cout << "3" << std::endl;
-
-    //         break;
-    //     }
-    //     case AMMOL:
-    //     {
-
-    //         buf_temp[0] = buf[3];
-    //         buf_temp[1] = buf[2];
-    //         memcpy(&(gimbal_state_msg_.ammol_speed), buf_temp, 2);
-    //         // device_online_msg_.ammol_motor = true;
-    //         std::cout << "4" << std::endl;
-
-    //         break;
-    //     }
-    //     case ROTOR:
-    //     {
-
-    //         buf_temp[0] = buf[3];
-    //         buf_temp[1] = buf[2];
-    //         memcpy(&(gimbal_state_msg_.rotor_speed), buf_temp, 2);
-    //         // device_online_msg_.rotor_motor = true;
-    //         std::cout << "5" << std::endl;
-
-    //         break;
-    //     }
-
-    //     default:
-    //         break;
-    //     }
-    // }
-    // gimbal_state_msg_.header.frame_id = "gimbal_state_";
-    // gimbal_state_msg_.header.stamp = gimbal_hw_node_->get_clock()->now();
-    // gimbal_state_publisher_->publish(gimbal_state_msg_);
 
     //---can1---
 
@@ -303,10 +223,10 @@ void GimbalHWNode::loop_send()
 
     // std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
-    // std::cout<<"send GIMBAL_COMMAND: "<<(int)buf_gimbal_[0]<<(int)buf_gimbal_[1]<<(int)buf_gimbal_[2]<<(int)buf_gimbal_[3]<<std::endl;
-    // std::cout<<"send CHASSIS_COMMAND: "<<(int)buf_chassis_[0]<<(int)buf_chassis_[1]<<(int)buf_chassis_[2]<<(int)buf_chassis_[3]<<std::endl;
     int gimbal_return = 2;
     int shoot_return = 2;
+    int chassis_return = 2;
+
     do{
         gimbal_return = this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
     }while(gimbal_return != 0);
@@ -315,9 +235,10 @@ void GimbalHWNode::loop_send()
         shoot_return = this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
     }while(shoot_return != 0);
 
-    // this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
-    // this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
-    // this->can1_.send(CHASSIS_COMMAND, buf_chassis_, sizeof(buf_chassis_));
+    do{
+        chassis_return = this->can1_.send(CHASSIS_COMMAND, buf_chassis_, sizeof(buf_chassis_));
+    }while(chassis_return != 0);
+
     buf_gimbal_[8] = {0};
     buf_shooter_[8] = {0};
     buf_chassis_[8] = {0};
@@ -412,7 +333,7 @@ void GimbalHWNode::loop_device_online()
     device_online_msg_.sensor = false;
 }
 
-void GimbalHWNode::recevieCallBack()
+void GimbalHWNode::gimbalRecevieCallBack()
 {
     //---can0---
     while (rclcpp::ok())
@@ -421,42 +342,35 @@ void GimbalHWNode::recevieCallBack()
         // std::cout << "start: " << start_time << std::endl;
 
         uint id = 0;
-        // u_char buf[8] = {0};
         u_char buf[8] = {0}, buf_temp[2] = {0};
         u_char dlc = 0;
-        // if (this->can0_.receive(id, buf, dlc) == transporter_sdk::Can::READ_ERROR)
-        // {
-        //     break;
-        // }
+
         this->can0_.receive(id, buf, dlc);
         switch (id)
         {
 
         case YAW:
         {
-
             buf_temp[0] = buf[1];
             buf_temp[1] = buf[0];
             memcpy(&(gimbal_state_msg_.yaw_angle), buf_temp, 2);
-            // device_online_msg_.yaw_motor = true;
+            device_online_msg_.yaw_motor = true;
             // std::cout << "1" << std::endl;
 
             break;
         }
         case PITCH:
         {
-
             buf_temp[0] = buf[1];
             buf_temp[1] = buf[0];
             memcpy(&(gimbal_state_msg_.pitch_angle), buf_temp, 2);
-            // device_online_msg_.pitch_motor = true;
+            device_online_msg_.pitch_motor = true;
             // std::cout << "2" << std::endl;
 
             break;
         }
         case AMMOR:
         {
-
             buf_temp[0] = buf[3];
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.ammor_speed), buf_temp, 2);
@@ -467,7 +381,6 @@ void GimbalHWNode::recevieCallBack()
         }
         case AMMOL:
         {
-
             buf_temp[0] = buf[3];
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.ammol_speed), buf_temp, 2);
@@ -478,7 +391,6 @@ void GimbalHWNode::recevieCallBack()
         }
         case ROTOR:
         {
-
             buf_temp[0] = buf[3];
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.rotor_speed), buf_temp, 2);
@@ -499,11 +411,85 @@ void GimbalHWNode::recevieCallBack()
         auto end_time = gimbal_hw_node_->get_clock()->now().nanoseconds();
         // std::cout << "end:   " << end_time << std::endl;
 
+        std::this_thread::sleep_for(std::chrono::microseconds((10*1000 - static_cast<int>(end_time - start_time))/1000));
+
+    }
+}
+
+void GimbalHWNode::chassisRecevieCallBack()
+{
+    //---can1---
+    while (rclcpp::ok())
+    {
+        auto start_time = gimbal_hw_node_->get_clock()->now().nanoseconds();
+        // std::cout << "start: " << start_time << std::endl;
+
+        uint id = 0;
+        u_char buf[8] = {0}, buf_temp[2] = {0};
+        u_char dlc = 0;
+        int16_t speed;
+
+        this->can1_.receive(id, buf, dlc);
+        switch (id)
+        {
+        case WHEEL1:
+        {
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&speed, buf_temp, 2);
+            chassis_state_msg_.speed[0] = speed;
+            device_online_msg_.wheel1 = true;
+
+            break;
+        }
+        case WHEEL2:
+        {
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&speed, buf_temp, 2);
+            chassis_state_msg_.speed[1] = speed;
+            device_online_msg_.wheel2 = true;
+
+            break;
+        }
+        case WHEEL3:
+        {
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&speed, buf_temp, 2);
+            chassis_state_msg_.speed[2] = speed;
+            device_online_msg_.wheel3 = true;
+
+            break;
+        }
+
+        case WHEEL4:
+        {
+            buf_temp[0] = buf[3];
+            buf_temp[1] = buf[2];
+            memcpy(&speed, buf_temp, 2);
+            chassis_state_msg_.speed[3] = speed;
+            device_online_msg_.wheel4 = true;
+
+            break;
+        }
+
+        default:
+            break;
+        }
+
+        chassis_state_msg_.header.frame_id = "chassis_state";
+        chassis_state_msg_.header.stamp = gimbal_hw_node_->get_clock()->now();
+        chassis_state_publisher_->publish(chassis_state_msg_);
+
+        auto end_time = gimbal_hw_node_->get_clock()->now().nanoseconds();
+        // std::cout << "end:   " << end_time << std::endl;
 
         std::this_thread::sleep_for(std::chrono::microseconds((10*1000 - static_cast<int>(end_time - start_time))/1000));
 
-
     }
+
+
 }
 
 int main(int argc, char *argv[])
