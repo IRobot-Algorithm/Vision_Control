@@ -301,18 +301,27 @@ void GimbalHWNode::loop_send()
 
     // if(device_online_msg_.whole_robot){
 
-    // std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
+    std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     // std::cout<<"send GIMBAL_COMMAND: "<<(int)buf_gimbal_[0]<<(int)buf_gimbal_[1]<<(int)buf_gimbal_[2]<<(int)buf_gimbal_[3]<<std::endl;
     // std::cout<<"send CHASSIS_COMMAND: "<<(int)buf_chassis_[0]<<(int)buf_chassis_[1]<<(int)buf_chassis_[2]<<(int)buf_chassis_[3]<<std::endl;
+    int gimbal_return = 2;
+    int shoot_return = 2;
+    do{
+        gimbal_return = this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
+    }while(gimbal_return != 0);
 
-    this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
-    this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
-    this->can1_.send(CHASSIS_COMMAND, buf_chassis_, sizeof(buf_chassis_));
+    do{
+        shoot_return = this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
+    }while(shoot_return != 0);
+
+    // this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
+    // this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
+    // this->can1_.send(CHASSIS_COMMAND, buf_chassis_, sizeof(buf_chassis_));
     buf_gimbal_[8] = {0};
     buf_shooter_[8] = {0};
     buf_chassis_[8] = {0};
-    // std::cout<<"end:     "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
+    std::cout<<"end:     "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
     // }
     // if(device_online_msg_.whole_robot){
@@ -409,7 +418,7 @@ void GimbalHWNode::recevieCallBack()
     while (rclcpp::ok())
     {
         auto start_time = gimbal_hw_node_->get_clock()->now().nanoseconds();
-        std::cout << "start: " << start_time << std::endl;
+        // std::cout << "start: " << start_time << std::endl;
 
         uint id = 0;
         // u_char buf[8] = {0};
@@ -430,7 +439,7 @@ void GimbalHWNode::recevieCallBack()
             buf_temp[1] = buf[0];
             memcpy(&(gimbal_state_msg_.yaw_angle), buf_temp, 2);
             // device_online_msg_.yaw_motor = true;
-            std::cout << "1" << std::endl;
+            // std::cout << "1" << std::endl;
 
             break;
         }
@@ -441,7 +450,7 @@ void GimbalHWNode::recevieCallBack()
             buf_temp[1] = buf[0];
             memcpy(&(gimbal_state_msg_.pitch_angle), buf_temp, 2);
             // device_online_msg_.pitch_motor = true;
-            std::cout << "2" << std::endl;
+            // std::cout << "2" << std::endl;
 
             break;
         }
@@ -452,7 +461,7 @@ void GimbalHWNode::recevieCallBack()
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.ammor_speed), buf_temp, 2);
             // device_online_msg_.ammor_motor = true;
-            std::cout << "3" << std::endl;
+            // std::cout << "3" << std::endl;
 
             break;
         }
@@ -463,7 +472,7 @@ void GimbalHWNode::recevieCallBack()
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.ammol_speed), buf_temp, 2);
             // device_online_msg_.ammol_motor = true;
-            std::cout << "4" << std::endl;
+            // std::cout << "4" << std::endl;
 
             break;
         }
@@ -474,7 +483,7 @@ void GimbalHWNode::recevieCallBack()
             buf_temp[1] = buf[2];
             memcpy(&(gimbal_state_msg_.rotor_speed), buf_temp, 2);
             // device_online_msg_.rotor_motor = true;
-            std::cout << "5" << std::endl;
+            // std::cout << "5" << std::endl;
 
             break;
         }
@@ -488,7 +497,7 @@ void GimbalHWNode::recevieCallBack()
         gimbal_state_publisher_->publish(gimbal_state_msg_);
 
         auto end_time = gimbal_hw_node_->get_clock()->now().nanoseconds();
-        std::cout << "end:   " << end_time << std::endl;
+        // std::cout << "end:   " << end_time << std::endl;
 
 
         std::this_thread::sleep_for(std::chrono::microseconds((10*1000 - static_cast<int>(end_time - start_time))/1000));

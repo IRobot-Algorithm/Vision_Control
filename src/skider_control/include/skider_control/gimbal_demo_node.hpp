@@ -162,6 +162,7 @@ private:
     // init & goal
     bool follow_init_ = false;
     bool ammo_enable_ = false;
+    bool rotor_enable_ = false;
     double yaw_zero_angle_;
     double ammo_goal_speed_, rotor_goal_speed_;
     
