@@ -1,4 +1,5 @@
 #include "gimbal_demo_node.hpp"
+#include "../../skider_utils/include/utils.hpp"
 
 GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &options)
 {
