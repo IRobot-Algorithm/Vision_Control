@@ -68,32 +68,7 @@ namespace transporter_sdk
 
     Can::Can()
     {
-        /*
-        //暂时不用这种构造
-        socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
-        // 配置 Socket CAN 为非阻塞IO
-        int flags = fcntl(socket_fd, F_GETFL, 0);
-        flags |= O_NONBLOCK;
-        fcntl(socket_fd, F_SETFL, flags);
-
-        // 指定can设备
-        if(can_id_ == 0){
-            
-            strcpy(interface_request.ifr_name, GIMBAL_CAN);
-        }
-        else if(can_id_ == 1){
-
-            strcpy(interface_request.ifr_name, GIMBAL_CAN);
-        }
-        // strcpy(interface_request.ifr_name, can_name_);
-
-        ioctl(socket_fd, SIOCGIFINDEX, &interface_request);
-        addr.can_family = AF_CAN;
-        addr.can_ifindex = interface_request.ifr_ifindex;
-
-        // 将套接字与can设备绑定
-        bind(socket_fd, (struct sockaddr *)&addr, sizeof(addr));*/
     }
 
     Can::~Can()

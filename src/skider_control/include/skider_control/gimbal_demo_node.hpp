@@ -106,6 +106,7 @@ private:
     void imu_msg_callback(const skider_interface::msg::Imu & msg);
     void gimbal_msg_callback(const skider_interface::msg::GimbalState & msg);
     void autoaim_msg_callback(const geometry_msgs::msg::Vector3 & msg);
+    void loop_calculate();
     
 private:
     rclcpp::Node::SharedPtr gimbal_controler_demo_node_;
@@ -118,7 +119,9 @@ private:
     rclcpp::Publisher<skider_interface::msg::GimbalDebug>::SharedPtr gimbal_debug_publisher_;
     skider_interface::msg::GimbalDebug gimbal_debug_msg_;
 
+    rclcpp::CallbackGroup::SharedPtr calculate_call_backgroup_;
     rclcpp::TimerBase::SharedPtr follow_init_timer_;
+    rclcpp::TimerBase::SharedPtr calculate_pid_timer_;
 
 private:
     // imu

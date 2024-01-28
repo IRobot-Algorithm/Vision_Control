@@ -102,6 +102,8 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions & opt
 
         follow_init_ = true;
     });
+    calculate_call_backgroup_ = gimbal_controler_demo_node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+    calculate_pid_timer_ = gimbal_controler_demo_node_->create_wall_timer(1ms, std::bind(&GimbalControlerDemoNode::loop_calculate, this), calculate_call_backgroup_);
 
     RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
 
