@@ -184,7 +184,7 @@ void ChassisControlerDemoNode::loop_10000Hz()
             {
                 follow_w_ = pid_follow_.calculate(yaw_angle_set_, yaw_angle_);
             }
-            std::cout<<"follow_w_: "<<follow_w_<<std::endl;
+            // std::cout<<"follow_w_: "<<follow_w_<<std::endl;
 
             double delta_yaw = yaw_relative / 4096 * M_PI;
             vx_solve_ = vx_set_ * cos(delta_yaw) - vy_set_ * sin(delta_yaw);

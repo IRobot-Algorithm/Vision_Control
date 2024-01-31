@@ -1,0 +1,30 @@
+# launch.py->node->name
+gimbal_demo_node:
+  ros__parameters:
+    pid_yaw_remote_in: [800.0, 0.0, 0.0]   #[8000.0, 0.0, 0.0]
+    pid_yaw_remote_out: [10.0, 0.0, 0.0]  
+    pid_yaw_init_in: [3.0, 0.0, 0.0]  
+    pid_yaw_init_out: [2.0, 0.0, 1.0]
+    pid_yaw_vision_in: [8000.0, 0.0, 0.0] 
+    pid_yaw_vision_out: [10.0, 0.0, 0.0]   
+    pid_pitch_remote_in: [800.0, 0.0, 0.0] #[8000.0, 0.0, 0.0]
+    pid_pitch_remote_out: [10.0, 0.0, 0.0]  #[10.0, 0.0, 0.0]
+    pid_pitch_vision_in: [8000.0, 0.0, 0.0]
+    pid_pitch_vision_out: [10.0, 0.0, 0.0]
+    pid_ammor: [1.0, 0.0, 0.0]
+    pid_ammol: [1.0, 0.0, 0.0]
+    pid_rotor: [1.0, 0.0, 0.0]
+    ammo_goal_speed: 7000.0
+    rotor_goal_speed: 4000.0
+    ammo_enable: true
+chassis_demo_node:
+  ros__parameters:
+    pid1: [1.8, 0.00, 0.3]
+    pid2: [1.8, 0.00, 0.3]
+    pid3: [1.8, 0.00, 0.3]
+    pid4: [1.8, 0.00, 0.3]  
+    pid_follow: [1.5, 0.000, 0.3]
+    spin_w: 3000.0
+    yaw_zero_angle: 7792.0
+
+    
