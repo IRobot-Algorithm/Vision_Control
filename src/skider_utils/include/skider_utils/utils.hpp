@@ -12,16 +12,16 @@
 //     GimbalRotor = 2
 // };
 
-enum class RobotState{
+enum class RobotState {
 
-    ChassisWeakGimbalWeak = 0,
-    ChassisWeakGimbalJoy = 1,
-    ChassisWeakGimbalJoyRotor = 2,
-    ChassisJoyGimbalWeak = 3,
-    ChassisJoyGimbalJoy = 4,
-    ChassisJoyGimbalJoyRotor = 5,
-    AutoaimGimbalWeak = 6,
-    AutoaimGimbalAutoaim = 7,
-    AutoaimGimbalAutoaimRotor = 8,
+  ChassisWeakGimbalWeak = 0,
+  ChassisWeakGimbalJoy = 1,
+  ChassisWeakGimbalJoyRotor = 2,
+  ChassisJoyGimbalWeak = 3,
+  ChassisJoyGimbalJoy = 4,
+  ChassisJoyGimbalJoyRotor = 5,
+  AutoaimGimbalWeak = 6,
+  AutoaimGimbalAutoaim = 7,
+  AutoaimGimbalAutoaimRotor = 8,
 
 };

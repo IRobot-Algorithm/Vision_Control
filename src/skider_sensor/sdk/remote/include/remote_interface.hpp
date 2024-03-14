@@ -1,5 +1,5 @@
 /*
- * @Description: 
+ * @Description:
  * @Version: 1.0
  * @Autor: Qylann
  * @Date: 2022-03-29 20:58:52
@@ -13,23 +13,20 @@
 #include <string>
 #include <vector>
 
-namespace sensor_sdk
-{
+namespace sensor_sdk {
 
-namespace remote
-{
-class RemoteBase
-{
-public:
-    virtual void update(unsigned char *buffer) = 0;
-    virtual void process() = 0;
+namespace remote {
+class RemoteBase {
+ public:
+  virtual void update(unsigned char *buffer) = 0;
+  virtual void process() = 0;
 
-    uint axes_size;
-    std::vector<float> axes;
-    uint buttons_size;
-    std::vector<bool> buttons;
+  uint axes_size;
+  std::vector<float> axes;
+  uint buttons_size;
+  std::vector<bool> buttons;
 };
 
-}
+}  // namespace remote
 
-}
+}  // namespace sensor_sdk

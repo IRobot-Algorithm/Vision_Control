@@ -1,78 +1,72 @@
 #include "can.hpp"
 
-namespace transporter_sdk
-{
-    int Can::send(uint id, u_char *buf, u_char dlc)
-    {
-        if (dlc > 8)
-            return DLC_ERROR;
+namespace transporter_sdk {
 
-        struct can_frame send_frame;
+int Can::send(uint id, u_char *buf, u_char dlc) {
+  if (dlc > 8)
+    return DLC_ERROR;
 
-        send_frame.can_id = id;
-        send_frame.can_dlc = dlc;
+  struct can_frame send_frame;
 
-        for (int i = 0; i < (int)dlc; i++)
-            send_frame.data[i] = buf[i];
+  send_frame.can_id = id;
+  send_frame.can_dlc = dlc;
 
-        int t = write(socket_fd, &send_frame, sizeof(send_frame));
-        if (t > 0)
-            return SUCCESS;
-        return WRITE_ERROR;
-    }
+  for (int i = 0; i < (int)dlc; i++)
+    send_frame.data[i] = buf[i];
 
-    int Can::receive(uint &id, u_char *buf, u_char &dlc)
-    {
-        struct can_frame frame;
-        int t = read(socket_fd, &frame, sizeof(frame));
-        if (t <= 0)
-            return READ_ERROR;
+  int t = write(socket_fd, &send_frame, sizeof(send_frame));
+  if (t > 0)
+    return SUCCESS;
+  return WRITE_ERROR;
+}
 
-        id = frame.can_id;
-        dlc = frame.can_dlc;
+int Can::receive(uint &id, u_char *buf, u_char &dlc) {
+  struct can_frame frame;
+  int t = read(socket_fd, &frame, sizeof(frame));
+  if (t <= 0)
+    return READ_ERROR;
 
-        memcpy(buf, frame.data, dlc);
-        //std::cout<<"can receive id: "<<std::hex<<frame.can_id<<std::endl;
-        return SUCCESS;
-    }
+  id = frame.can_id;
+  dlc = frame.can_dlc;
 
-    Can::Can(int can_id)
-    {
-        socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+  memcpy(buf, frame.data, dlc);
+  // std::cout<<"can receive id: "<<std::hex<<frame.can_id<<std::endl;
+  return SUCCESS;
+}
 
-        // 配置 Socket CAN 为非阻塞IO
-        int flags = fcntl(socket_fd, F_GETFL, 0);
-        flags |= O_NONBLOCK;
-        fcntl(socket_fd, F_SETFL, flags);
+Can::Can(int can_id) {
+  socket_fd = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
-        // 指定can设备
-        if(can_id == 0){
-            std::cout<<"指定can设备 can_id: "<<can_id<<std::endl;
-            
-            strcpy(interface_request.ifr_name, GIMBAL_CAN);
-        }
-        else if(can_id == 1){
-            std::cout<<"指定can设备 can_id: "<<can_id<<std::endl;
+  // 配置 Socket CAN 为非阻塞IO
+  int flags = fcntl(socket_fd, F_GETFL, 0);
+  flags |= O_NONBLOCK;
+  fcntl(socket_fd, F_SETFL, flags);
 
-            strcpy(interface_request.ifr_name, CHASSIS_CAN);
-        }
-        // strcpy(interface_request.ifr_name, can_name_);
+  // 指定can设备
+  if (can_id == 0) {
+    std::cout << "指定can设备 can_id: " << can_id << std::endl;
 
-        ioctl(socket_fd, SIOCGIFINDEX, &interface_request);
-        addr.can_family = AF_CAN;
-        addr.can_ifindex = interface_request.ifr_ifindex;
+    strcpy(interface_request.ifr_name, GIMBAL_CAN);
+  } else if (can_id == 1) {
+    std::cout << "指定can设备 can_id: " << can_id << std::endl;
 
-        // 将套接字与can设备绑定
-        bind(socket_fd, (struct sockaddr *)&addr, sizeof(addr));
-    }
+    strcpy(interface_request.ifr_name, CHASSIS_CAN);
+  }
+  // strcpy(interface_request.ifr_name, can_name_);
 
-    Can::Can()
-    {
+  ioctl(socket_fd, SIOCGIFINDEX, &interface_request);
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = interface_request.ifr_ifindex;
 
-    }
+  // 将套接字与can设备绑定
+  bind(socket_fd, (struct sockaddr *)&addr, sizeof(addr));
+}
 
-    Can::~Can()
-    {
-        close(this->socket_fd);
-    }
-} // namespace transporter_sdk
+Can::Can() {
+}
+
+Can::~Can() {
+  close(this->socket_fd);
+}
+
+}  // namespace transporter_sdk
