@@ -1,5 +1,9 @@
 #include "gimbal_demo_node.hpp"
 
+#include <skider_utils/utils.hpp>
+
+using namespace utils;
+
 GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &options) {
   gimbal_controler_demo_node_ = std::make_shared<rclcpp::Node>("gimbal_controler_node", options);
   RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Node Begin");
@@ -19,22 +23,18 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
       {"pid_ammor", {0.0, 0.0, 0.0}},
       {"pid_ammol", {0.0, 0.0, 0.0}},
       {"pid_rotor", {0.0, 0.0, 0.0}},
-
   };
 
   std::map<std::string, double> double_params{
-
       {"ammo_goal_speed", 0.0},
       {"rotor_goal_speed", 0.0},
-
   };
 
   std::map<std::string, bool> bool_params{
-
       {"ammo_enable", false},
   };
 
-  // pid parameter
+  // 读pid参数，参数在config/params.yaml文件里设置
   gimbal_controler_demo_node_->declare_parameters("", pid_params);
   gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_remote_in", pid_yaw_remote_in_params_);
   gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_remote_out", pid_yaw_remote_out_params_);
@@ -69,6 +69,8 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
 
   std::string joy_subscribe_topic_name_("/skider/joy/data");
   RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Subscribe JOY data : \"%s\"", joy_subscribe_topic_name_.c_str());
+
+  // publisher是remote_sensor_node，从hw节点接收到sbus包之后提取数据发布出来
   joy_subscription_ = gimbal_controler_demo_node_->create_subscription<sensor_msgs::msg::Joy>(
       joy_subscribe_topic_name_, 10, std::bind(&GimbalControlerDemoNode::joy_msg_callback, this, std::placeholders::_1));
 
@@ -95,6 +97,7 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
 
   RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
 
+  // 用读到的参数初始化PID对象
   this->pid_yaw_remote_in_ = PID(PIDType::kPosition, pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2], 30000, 5000);
   this->pid_yaw_remote_out_ = PID(pid_yaw_remote_out_params_[0], pid_yaw_remote_out_params_[1], pid_yaw_remote_out_params_[2]);
   this->pid_yaw_init_in_ = PID(pid_yaw_init_in_params_[0], pid_yaw_init_in_params_[1], pid_yaw_init_in_params_[2]);
@@ -108,15 +111,6 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
   this->pid_ammor_ = PID(pid_ammor_params_[0], pid_ammor_params_[1], pid_ammor_params_[2]);
   this->pid_ammol_ = PID(pid_ammol_params_[0], pid_ammol_params_[1], pid_ammol_params_[2]);
   this->pid_rotor_ = PID(pid_rotor_params_[0], pid_rotor_params_[1], pid_rotor_params_[2]);
-}
-
-inline double speed_limit(double input, double max) {
-  if (input > max) {
-    return max;
-  } else if (input < -max) {
-    return -max;
-  }
-  return input;
 }
 
 inline double get_relative_angle(double angle_aim, double angle_ref, int type) {
@@ -142,28 +136,6 @@ inline double get_relative_angle(double angle_aim, double angle_ref, int type) {
     }
   }
   return reletive_angle;
-}
-
-inline double aim_loop(double angle_aim) {
-  while (angle_aim > M_PI) {
-    angle_aim -= 2 * M_PI;
-  }
-  while (angle_aim < -M_PI) {
-    angle_aim += 2 * M_PI;
-  }
-
-  return angle_aim;
-}
-
-inline double aim_limut(double angle_aim, double max, double min) {
-  while (angle_aim > max) {
-    return max;
-  }
-  while (angle_aim < min) {
-    return min;
-  }
-
-  return angle_aim;
 }
 
 void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg) {
@@ -220,42 +192,42 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 
       double yaw_w_goal = this->pid_yaw_init_out_.update(yaw_init, yaw_angle_);
       double yaw_current = this->pid_yaw_init_in_.update(yaw_w_goal, w_yaw_);
-      gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
+      gimbal_command_msg_.yaw_current = (int16_t)((int)(absConstrain(yaw_current, 30000.0)));
 
       yaw_angle_set_ = imu_yaw_;
       gimbal_command_msg_.follow_init = follow_init_;
     } else {
-      yaw_angle_set_ = aim_loop(yaw_angle_set_ + (-msg.axes[2]) * 0.01);
+      yaw_angle_set_ = loopConstrain(yaw_angle_set_ + (-msg.axes[2]) * 0.01, -M_PI, M_PI);
       double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
       yaw_angle_set_ = imu_yaw_ + yaw_relative;
 
       double yaw_w_goal = this->pid_yaw_remote_out_.update(yaw_angle_set_, imu_yaw_);
       double yaw_current = this->pid_yaw_remote_in_.update(yaw_w_goal, w_yaw_);
-      gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
+      gimbal_command_msg_.yaw_current = (int16_t)((int)(absConstrain(yaw_current, 30000.0)));
 
       gimbal_command_msg_.follow_init = true;
     }
 
-    pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3]) * 0.03), 0.43, -0.4);
+    pitch_angle_set_ = constrain((pitch_angle_set_ + (msg.axes[3]) * 0.03), -0.4, 0.43);
     double pitch_w_goal = this->pid_pitch_remote_out_.update(pitch_angle_set_, imu_pitch_);
     double pitch_current = this->pid_pitch_remote_in_.update(pitch_w_goal, w_pitch_);
-    gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
+    gimbal_command_msg_.pitch_current = (int16_t)(absConstrain(pitch_current, 30000.0));
   }
 
   // 摩擦轮转动TOCHECK
   if (msg.buttons[2] == true) {
     if (ammo_enable_) {
       gimbal_command_msg_.ammor_current = this->pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
-      gimbal_command_msg_.ammor_current = (int16_t)(speed_limit(gimbal_command_msg_.ammor_current, 30000));
+      gimbal_command_msg_.ammor_current = (int16_t)(absConstrain(gimbal_command_msg_.ammor_current, (int16_t)30000));
       gimbal_command_msg_.ammol_current = this->pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
-      gimbal_command_msg_.ammol_current = (int16_t)(speed_limit(gimbal_command_msg_.ammol_current, 30000));
+      gimbal_command_msg_.ammol_current = (int16_t)(absConstrain(gimbal_command_msg_.ammol_current, (int16_t)30000));
     }
   }
   // rotor
   if (msg.axes[4] > 0.9f && msg.buttons[2] == true) {
     rotor_enable_ = true;
     gimbal_command_msg_.rotor_current = this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
-    gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
+    gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(gimbal_command_msg_.rotor_current, (int16_t)30000));
   } else if (msg.buttons[2] != true) {
     gimbal_command_msg_.rotor_current = 0;
   }
@@ -272,13 +244,13 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
   //     double yaw_w_goal = this->pid_yaw_vision_out_.update(yaw_angle_set_, imu_yaw_);
   //     double yaw_current = this->pid_yaw_vision_in_.update(yaw_w_goal, w_yaw_);
   //     // std::cout<<yaw_w_goal<<"\t"<<w_yaw_<<"\t"<<yaw_current<<std::endl;
-  //     gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
+  //     gimbal_command_msg_.yaw_current = (int16_t)((int)(absConstrain(yaw_current, 30000)));
   //     gimbal_command_msg_.follow_init = true;
 
-  //     pitch_angle_set_ = aim_limut(autoaim_pitch_, 0.25, -0.4);
+  //     pitch_angle_set_ = constrain(autoaim_pitch_, -0.4, 0.25);
   //     double pitch_w_goal = this->pid_pitch_vision_out_.update(pitch_angle_set_, imu_pitch_);
   //     double pitch_current = this->pid_pitch_vision_in_.update(pitch_w_goal, w_pitch_);
-  //     gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
+  //     gimbal_command_msg_.pitch_current = (int16_t)(absConstrain(pitch_current, 30000));
 
   // }
 
@@ -357,7 +329,7 @@ void GimbalControlerDemoNode::loop_calculate() {
   //     gimbal_command_msg_.rotor_current = this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
   //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
 
-  //     gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
+  //     gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(gimbal_command_msg_.rotor_current, 30000));
   //     // gimbal_command_publisher_->publish(gimbal_command_msg_);
   //     gimbal_command_msg_.yaw_current = 0;
   //     gimbal_command_msg_.pitch_current = 0;

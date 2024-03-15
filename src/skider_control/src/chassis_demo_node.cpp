@@ -1,5 +1,9 @@
 #include "chassis_demo_node.hpp"
 
+#include <skider_utils/utils.hpp>
+
+using namespace utils;
+
 ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &options) {
   chassis_controler_demo_node_ = std::make_shared<rclcpp::Node>("chassis_controler_node", options);
   RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Node Begin");
@@ -88,50 +92,6 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &op
   pid_vec_.push_back(pid4);
 }
 
-inline double speed_limit(double input, double max) {
-  if (input > max) {
-    return max;
-  } else if (input < -max) {
-    return -max;
-  }
-  return input;
-}
-
-inline double get_relative_angle(double angle_aim, double angle_ref) {
-  double reletive_angle = angle_aim - angle_ref;
-
-  while (reletive_angle > 4096) {
-    reletive_angle -= 2 * 4096;
-  }
-  while (reletive_angle < -4096) {
-    reletive_angle += 2 * 4096;
-  }
-
-  return reletive_angle;
-}
-
-inline double aim_loop(double angle_aim) {
-  while (angle_aim > M_PI) {
-    angle_aim -= 2 * M_PI;
-  }
-  while (angle_aim < -M_PI) {
-    angle_aim += 2 * M_PI;
-  }
-
-  return angle_aim;
-}
-
-inline double aim_limut(double angle_aim, double max, double min) {
-  while (angle_aim > max) {
-    return max;
-  }
-  while (angle_aim < min) {
-    return min;
-  }
-
-  return angle_aim;
-}
-
 void ChassisControlerDemoNode::loop_10000Hz() {
   // command send
   skider_interface::msg::ChassisCommand chassis_msg;
@@ -147,7 +107,7 @@ void ChassisControlerDemoNode::loop_10000Hz() {
         chassis_msg.current.push_back(0);
       }
     } else {
-      double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_);
+      double yaw_relative = loopConstrain(yaw_zero_angle_ - yaw_angle_, -4096.0, 4096.0);
       double yaw_angle_set_ = yaw_angle_ + yaw_relative;
 
       if (axes4_ < -0.9) {
@@ -168,7 +128,7 @@ void ChassisControlerDemoNode::loop_10000Hz() {
 
       for (int i = 0; i < 4; i++) {
         chassis_current[i] = pid_vec_[i].update(chassis_speed_[i], chassis_state_[i]);
-        chassis_current[i] = speed_limit(chassis_current[i], 16384);
+        chassis_current[i] = absConstrain(chassis_current[i], 16384.0);
         chassis_msg.current.push_back(chassis_current[i]);
       }
     }
