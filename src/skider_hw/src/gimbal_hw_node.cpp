@@ -212,9 +212,9 @@ void GimbalHWNode::txLoop() {
 
   // std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
-  while (this->can0_.send(GIMBAL_COMMAND, buf_gimbal_.data(), buf_gimbal_.size())) {}
-  while (this->can0_.send(SHOOT_COMMAND, buf_shooter_.data(), buf_shooter_.size())) {}
-  while (this->can1_.send(CHASSIS_COMMAND, buf_chassis_.data(), buf_chassis_.size())) {}
+  while (this->can0_.send(GIMBAL_COMMAND, buf_gimbal_.data(), buf_gimbal_.size()));
+  while (this->can0_.send(SHOOT_COMMAND, buf_shooter_.data(), buf_shooter_.size()));
+  while (this->can1_.send(CHASSIS_COMMAND, buf_chassis_.data(), buf_chassis_.size()));
 
   buf_gimbal_.fill(0);
   buf_shooter_.fill(0);
