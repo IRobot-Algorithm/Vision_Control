@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-## USE THIS WITH CAUTION!!!!``
+## USE THIS WITH CAUTION!!!!
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
