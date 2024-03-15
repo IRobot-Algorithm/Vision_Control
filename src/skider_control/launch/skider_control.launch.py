@@ -2,7 +2,6 @@ import os
 import sys
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from ament_index_python.packages import get_package_share_directory
 
 SCRIPT_DIR = os.path.split(os.path.realpath(__file__))[0]               # 获取这个脚本所在目录
 PACKAGE_DIR = os.path.join(SCRIPT_DIR, os.pardir)                       # 向上两级，到skider_control/
