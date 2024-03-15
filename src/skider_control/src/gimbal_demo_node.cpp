@@ -214,20 +214,22 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
     gimbal_command_msg_.pitch_current = (int16_t)(absConstrain(pitch_current, 30000.0));
   }
 
-  // 摩擦轮转动TOCHECK
+  // 右边拨杆拨到上 摩擦轮转动
   if (msg.buttons[2] == true) {
     if (ammo_enable_) {
-      gimbal_command_msg_.ammor_current = this->pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
-      gimbal_command_msg_.ammor_current = (int16_t)(absConstrain(gimbal_command_msg_.ammor_current, (int16_t)30000));
-      gimbal_command_msg_.ammol_current = this->pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
-      gimbal_command_msg_.ammol_current = (int16_t)(absConstrain(gimbal_command_msg_.ammol_current, (int16_t)30000));
+      this->pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
+      gimbal_command_msg_.ammor_current = (int16_t)(absConstrain(this->pid_ammor_.value(), (int16_t)30000));
+      // gimbal_command_msg_.ammor_current = 0;
+      this->pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
+      gimbal_command_msg_.ammol_current = (int16_t)(absConstrain(this->pid_ammol_.value(), (int16_t)30000));
+      // gimbal_command_msg_.ammol_current = 0;
     }
   }
-  // rotor
+  // 右边拨杆拨到上，轮子向左转 拨盘转动
   if (msg.axes[4] > 0.9f && msg.buttons[2] == true) {
     rotor_enable_ = true;
-    gimbal_command_msg_.rotor_current = this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
-    gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(gimbal_command_msg_.rotor_current, (int16_t)30000));
+    this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
+    gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(this->pid_rotor_.value(), (int16_t)30000));
   } else if (msg.buttons[2] != true) {
     gimbal_command_msg_.rotor_current = 0;
   }
@@ -254,6 +256,7 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 
   // }
 
+  // 右边拨杆拨到下 云台无力
   if (msg.buttons[0] == true) {
     gimbal_command_msg_.yaw_current = 0;
     gimbal_command_msg_.pitch_current = 0;

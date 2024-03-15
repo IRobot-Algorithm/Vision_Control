@@ -93,14 +93,13 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &op
 }
 
 void ChassisControlerDemoNode::loop_10000Hz() {
-  // command send
   skider_interface::msg::ChassisCommand chassis_msg;
   chassis_msg.header.set__frame_id("Controler Chassis Command");
   chassis_msg.header.set__stamp(chassis_controler_demo_node_->get_clock()->now());
   chassis_msg.header.stamp = stamp_.stamp;
   double chassis_current[4];
 
-  // 底盘有力
+  // 右拨杆拨到中或上 底盘有力
   if ((button1_ == true) || (button2_ == true)) {
     if (follow_init_ != true) {
       for (int i = 0; i < 4; i++) {

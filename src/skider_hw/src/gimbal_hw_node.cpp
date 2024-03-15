@@ -75,11 +75,11 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions &options) {
   RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Timer ");
 
   // the max actual frequency is 1000HZ. Therefore use duration less than 1000us is meaningless.
-  timer_10000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::loop_receive, this), receive_call_backgroup_);
-  timer_1000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::loop_send, this), send_call_backgroup_);
+  timer_10000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::rxLoop, this), receive_call_backgroup_);
+  timer_1000Hz_ = gimbal_hw_node_->create_wall_timer(1000us, std::bind(&GimbalHWNode::txLoop, this), send_call_backgroup_);
 
   RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Timer ");
-  device_online_timer_ = gimbal_hw_node_->create_wall_timer(500ms, std::bind(&GimbalHWNode::loop_device_online, this), send_call_backgroup_);
+  device_online_timer_ = gimbal_hw_node_->create_wall_timer(500ms, std::bind(&GimbalHWNode::checkDeviceOnlineLoop, this), send_call_backgroup_);
 
   RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Init Recevie Thread ");
   this->gimbal_recevie_thread_ = std::thread(&GimbalHWNode::gimbalRecevieCallBack, this);
@@ -103,7 +103,7 @@ GimbalHWNode::GimbalHWNode(const rclcpp::NodeOptions &options) {
   RCLCPP_INFO(gimbal_hw_node_->get_logger(), "Finish Init");
 }
 
-void GimbalHWNode::loop_receive() {
+void GimbalHWNode::rxLoop() {
   // std::cout << "start: " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
 
   //---usb---
@@ -207,30 +207,18 @@ void GimbalHWNode::loop_receive() {
   // std::cout << "end:   " << gimbal_hw_node_->get_clock()->now().nanoseconds() << std::endl;
 }
 
-void GimbalHWNode::loop_send() {
+void GimbalHWNode::txLoop() {
   // if(device_online_msg_.whole_robot){
 
   // std::cout<<"start:   "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
-  int gimbal_return = 2;
-  int shoot_return = 2;
-  int chassis_return = 2;
+  while (this->can0_.send(GIMBAL_COMMAND, buf_gimbal_.data(), buf_gimbal_.size())) {}
+  while (this->can0_.send(SHOOT_COMMAND, buf_shooter_.data(), buf_shooter_.size())) {}
+  while (this->can1_.send(CHASSIS_COMMAND, buf_chassis_.data(), buf_chassis_.size())) {}
 
-  do {
-    gimbal_return = this->can0_.send(GIMBAL_COMMAND, buf_gimbal_, sizeof(buf_gimbal_));
-  } while (gimbal_return != 0);
-
-  do {
-    shoot_return = this->can0_.send(SHOOT_COMMAND, buf_shooter_, sizeof(buf_shooter_));
-  } while (shoot_return != 0);
-
-  do {
-    chassis_return = this->can1_.send(CHASSIS_COMMAND, buf_chassis_, sizeof(buf_chassis_));
-  } while (chassis_return != 0);
-
-  buf_gimbal_[8] = {0};
-  buf_shooter_[8] = {0};
-  buf_chassis_[8] = {0};
+  buf_gimbal_.fill(0);
+  buf_shooter_.fill(0);
+  buf_chassis_.fill(0);
   // std::cout<<"end:     "<<gimbal_hw_node_->get_clock()->now().nanoseconds()<<std::endl;
 
   // }
@@ -290,7 +278,7 @@ void GimbalHWNode::chassis_command_msg_callback(const skider_interface::msg::Cha
   // stamp_.stamp=msg.header.stamp;
 }
 
-void GimbalHWNode::loop_device_online() {
+void GimbalHWNode::checkDeviceOnlineLoop() {
   device_online_msg_.header.set__stamp(gimbal_hw_node_->get_clock()->now());
   // device_online_msg_.gimbal = device_online_msg_.yaw_motor&device_online_msg_.pitch_motor
   //                             &device_online_msg_.ammol_motor&device_online_msg_.ammor_motor

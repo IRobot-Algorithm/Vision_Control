@@ -5,6 +5,7 @@
 #include <functional>
 #include <chrono>
 #include <thread>
+#include <array>
 
 #include <rclcpp/rclcpp.hpp>
 #include <skider_interface/msg/sbus.hpp>
@@ -20,7 +21,7 @@
 #include "transport_package.h"
 #include "can.hpp"
 
-using namespace std::chrono_literals;
+using namespace ::std::chrono_literals;
 
 class GimbalHWNode {
  public:
@@ -32,17 +33,17 @@ class GimbalHWNode {
  private:
   rclcpp::Node::SharedPtr gimbal_hw_node_;
 
-  void loop_receive();
-  void loop_send();
-  void loop_device_online();
+  void rxLoop();
+  void txLoop();
+  void checkDeviceOnlineLoop();
 
   void gimbal_command_msg_callback(const skider_interface::msg::GimbalCommand &msg);
   void chassis_command_msg_callback(const skider_interface::msg::ChassisCommand &msg);
   void gimbalRecevieCallBack();
   void chassisRecevieCallBack();
 
-  std::thread gimbal_recevie_thread_;
-  std::thread chassis_recevie_thread_;
+  ::std::thread gimbal_recevie_thread_;
+  ::std::thread chassis_recevie_thread_;
 
   rclcpp::CallbackGroup::SharedPtr send_call_backgroup_;
   rclcpp::CallbackGroup::SharedPtr receive_call_backgroup_;
@@ -64,14 +65,14 @@ class GimbalHWNode {
   rclcpp::Subscription<skider_interface::msg::ChassisCommand>::SharedPtr chassis_command_subscription_;
 
   // ---transporter---
-  std::shared_ptr<transporter_sdk::TransporterInterface> transporter_;
+  ::std::shared_ptr<transporter_sdk::TransporterInterface> transporter_;
 
   // ---debug---
   std_msgs::msg::Header stamp_;
 
   // ---params---
-  std::string imu_raw_publish_topic_name_;
-  std::string sbus_publish_topic_name_;
+  ::std::string imu_raw_publish_topic_name_;
+  ::std::string sbus_publish_topic_name_;
   int gimbal_interface_usb_vid_;
   int gimbal_interface_usb_pid_;
   int gimbal_interface_usb_read_endpoint_;
@@ -84,9 +85,9 @@ class GimbalHWNode {
   transporter_sdk::Can can1_{transporter_sdk::Can(1)};
 
   // ---buffer---
-  u_char buf_gimbal_[8];
-  u_char buf_shooter_[8];
-  u_char buf_chassis_[8];
+  ::std::array<u_char, 8> buf_gimbal_;
+  ::std::array<u_char, 8> buf_shooter_;
+  ::std::array<u_char, 8> buf_chassis_;
 
  public:
   // ---msg---
