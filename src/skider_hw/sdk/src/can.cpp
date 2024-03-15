@@ -3,21 +3,21 @@
 namespace transporter_sdk {
 
 int Can::send(uint id, u_char *buf, u_char dlc) {
-  // if (dlc > 8)
-  //   return DLC_ERROR;
+  if (dlc > 8)
+    return DLC_ERROR;
 
-  // struct can_frame send_frame;
+  struct can_frame send_frame;
 
-  // send_frame.can_id = id;
-  // send_frame.can_dlc = dlc;
+  send_frame.can_id = id;
+  send_frame.can_dlc = dlc;
 
-  // for (int i = 0; i < (int)dlc; i++)
-  //   send_frame.data[i] = buf[i];
+  for (int i = 0; i < (int)dlc; i++)
+    send_frame.data[i] = buf[i];
 
-  // int t = write(socket_fd, &send_frame, sizeof(send_frame));
-  // if (t > 0)
-  //   return SUCCESS;
-  // return WRITE_ERROR;
+  int t = write(socket_fd, &send_frame, sizeof(send_frame));
+  if (t > 0)
+    return SUCCESS;
+  return WRITE_ERROR;
   return SUCCESS;
 }
 

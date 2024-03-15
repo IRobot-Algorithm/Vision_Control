@@ -17,9 +17,9 @@ namespace imu {
 class MahonyAHRS : public AHRSInterface {
  public:
   MahonyAHRS(double kp, double ki, double sampling_frequency)
-      : kp_(kp),
-        ki_(ki),
-        sampling_frequency_(sampling_frequency) {}
+      : sampling_frequency_(sampling_frequency),
+        kp_(kp),
+        ki_(ki) {}
   void init() override;
   void calculate() override;
 
