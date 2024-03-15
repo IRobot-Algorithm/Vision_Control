@@ -127,7 +127,7 @@ double absConstrain(double input, double max_value) {
  * @param deg       角度
  * @return          弧度
  */
-double degToRad(double deg) { 
+double degToRad(double deg) {
   return deg * M_PI / 180;
 }
 
