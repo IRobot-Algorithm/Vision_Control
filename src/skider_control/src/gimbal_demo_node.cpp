@@ -1,5 +1,4 @@
 #include "gimbal_demo_node.hpp"
-// #include "../../skider_utils/include/utils.hpp"
 
 GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &options) {
   gimbal_controler_demo_node_ = std::make_shared<rclcpp::Node>("gimbal_controler_node", options);
@@ -96,8 +95,11 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
 
   RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
 
-  this->pid_yaw_remote_in_ = PID(pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2]);
-  this->pid_yaw_remote_in_.i_sum_limit_ = Limit(-5000, 5000);
+  this->pid_yaw_remote_in_ = PID(PIDType::kPosition,
+                                 pid_yaw_remote_in_params_[0], 
+                                 pid_yaw_remote_in_params_[1], 
+                                 pid_yaw_remote_in_params_[2],
+                                 30000, 5000);
   this->pid_yaw_remote_out_ = PID(pid_yaw_remote_out_params_[0], pid_yaw_remote_out_params_[1], pid_yaw_remote_out_params_[2]);
   this->pid_yaw_init_in_ = PID(pid_yaw_init_in_params_[0], pid_yaw_init_in_params_[1], pid_yaw_init_in_params_[2]);
   this->pid_yaw_init_out_ = PID(pid_yaw_init_out_params_[0], pid_yaw_init_out_params_[1], pid_yaw_init_out_params_[2]);
@@ -220,8 +222,8 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
       double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_, 2);
       double yaw_init = yaw_angle_ + yaw_relative;
 
-      double yaw_w_goal = this->pid_yaw_init_out_.calculate(yaw_init, yaw_angle_);
-      double yaw_current = this->pid_yaw_init_in_.calculate(yaw_w_goal, w_yaw_);
+      double yaw_w_goal = this->pid_yaw_init_out_.update(yaw_init, yaw_angle_);
+      double yaw_current = this->pid_yaw_init_in_.update(yaw_w_goal, w_yaw_);
       gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
 
       yaw_angle_set_ = imu_yaw_;
@@ -231,32 +233,32 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
       double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
       yaw_angle_set_ = imu_yaw_ + yaw_relative;
 
-      double yaw_w_goal = this->pid_yaw_remote_out_.calculate(yaw_angle_set_, imu_yaw_);
-      double yaw_current = this->pid_yaw_remote_in_.calculate(yaw_w_goal, w_yaw_);
+      double yaw_w_goal = this->pid_yaw_remote_out_.update(yaw_angle_set_, imu_yaw_);
+      double yaw_current = this->pid_yaw_remote_in_.update(yaw_w_goal, w_yaw_);
       gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
 
       gimbal_command_msg_.follow_init = true;
     }
 
     pitch_angle_set_ = aim_limut((pitch_angle_set_ + (msg.axes[3]) * 0.03), 0.43, -0.4);
-    double pitch_w_goal = this->pid_pitch_remote_out_.calculate(pitch_angle_set_, imu_pitch_);
-    double pitch_current = this->pid_pitch_remote_in_.calculate(pitch_w_goal, w_pitch_);
+    double pitch_w_goal = this->pid_pitch_remote_out_.update(pitch_angle_set_, imu_pitch_);
+    double pitch_current = this->pid_pitch_remote_in_.update(pitch_w_goal, w_pitch_);
     gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
   }
 
   // 摩擦轮转动TOCHECK
   if (msg.buttons[2] == true) {
     if (ammo_enable_) {
-      gimbal_command_msg_.ammor_current = this->pid_ammor_.calculate(ammo_goal_speed_, ammor_speed_);
+      gimbal_command_msg_.ammor_current = this->pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
       gimbal_command_msg_.ammor_current = (int16_t)(speed_limit(gimbal_command_msg_.ammor_current, 30000));
-      gimbal_command_msg_.ammol_current = this->pid_ammol_.calculate(-ammo_goal_speed_, ammol_speed_);
+      gimbal_command_msg_.ammol_current = this->pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
       gimbal_command_msg_.ammol_current = (int16_t)(speed_limit(gimbal_command_msg_.ammol_current, 30000));
     }
   }
   // rotor
   if (msg.axes[4] > 0.9f && msg.buttons[2] == true) {
     rotor_enable_ = true;
-    gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
+    gimbal_command_msg_.rotor_current = this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
     gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));
   } else if (msg.buttons[2] != true) {
     gimbal_command_msg_.rotor_current = 0;
@@ -271,15 +273,15 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
   //     double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
   //     yaw_angle_set_ = imu_yaw_ + yaw_relative;
 
-  //     double yaw_w_goal = this->pid_yaw_vision_out_.calculate(yaw_angle_set_, imu_yaw_);
-  //     double yaw_current = this->pid_yaw_vision_in_.calculate(yaw_w_goal, w_yaw_);
+  //     double yaw_w_goal = this->pid_yaw_vision_out_.update(yaw_angle_set_, imu_yaw_);
+  //     double yaw_current = this->pid_yaw_vision_in_.update(yaw_w_goal, w_yaw_);
   //     // std::cout<<yaw_w_goal<<"\t"<<w_yaw_<<"\t"<<yaw_current<<std::endl;
   //     gimbal_command_msg_.yaw_current = (int16_t)((int)(speed_limit(yaw_current, 30000)));
   //     gimbal_command_msg_.follow_init = true;
 
   //     pitch_angle_set_ = aim_limut(autoaim_pitch_, 0.25, -0.4);
-  //     double pitch_w_goal = this->pid_pitch_vision_out_.calculate(pitch_angle_set_, imu_pitch_);
-  //     double pitch_current = this->pid_pitch_vision_in_.calculate(pitch_w_goal, w_pitch_);
+  //     double pitch_w_goal = this->pid_pitch_vision_out_.update(pitch_angle_set_, imu_pitch_);
+  //     double pitch_current = this->pid_pitch_vision_in_.update(pitch_w_goal, w_pitch_);
   //     gimbal_command_msg_.pitch_current = (int16_t)(speed_limit(pitch_current, 30000));
 
   // }
@@ -356,7 +358,7 @@ void GimbalControlerDemoNode::loop_calculate() {
 
   //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
 
-  //     gimbal_command_msg_.rotor_current = this->pid_rotor_.calculate(rotor_goal_speed_, rotor_speed_);
+  //     gimbal_command_msg_.rotor_current = this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
   //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
 
   //     gimbal_command_msg_.rotor_current = (int16_t)(speed_limit(gimbal_command_msg_.rotor_current, 30000));

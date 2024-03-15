@@ -75,17 +75,12 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &op
   RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Finish Init");
 
   // ---PID---
-  PID pid1(pid1_params_[0], pid1_params_[1], pid1_params_[2]);
-  pid1.i_sum_limit_ = Limit(-1000, 1000);
-  PID pid2(pid2_params_[0], pid2_params_[1], pid2_params_[2]);
-  pid2.i_sum_limit_ = Limit(-1000, 1000);
-  PID pid3(pid3_params_[0], pid3_params_[1], pid3_params_[2]);
-  pid3.i_sum_limit_ = Limit(-1000, 1000);
-  PID pid4(pid4_params_[0], pid4_params_[1], pid4_params_[2]);
-  pid4.i_sum_limit_ = Limit(-1000, 1000);
+  PID pid1(PIDType::kPosition, pid1_params_[0], pid1_params_[1], pid1_params_[2], DBL_MAX, 1000);
+  PID pid2(PIDType::kPosition, pid2_params_[0], pid2_params_[1], pid2_params_[2], DBL_MAX, 1000);
+  PID pid3(PIDType::kPosition, pid3_params_[0], pid3_params_[1], pid3_params_[2], DBL_MAX, 1000);
+  PID pid4(PIDType::kPosition, pid4_params_[0], pid4_params_[1], pid4_params_[2], DBL_MAX, 1000);
 
-  pid_follow_ = PID(pid_follow_params_[0], pid_follow_params_[1], pid_follow_params_[2]);
-  pid_follow_.i_sum_limit_ = Limit(-1000, 1000);
+  pid_follow_ = PID(PIDType::kPosition, pid_follow_params_[0], pid_follow_params_[1], pid_follow_params_[2], DBL_MAX, 1000);
 
   pid_vec_.push_back(pid1);
   pid_vec_.push_back(pid2);
@@ -158,7 +153,7 @@ void ChassisControlerDemoNode::loop_10000Hz() {
       if (axes4_ < -0.9) {
         follow_w_ = spin_w_;
       } else {
-        follow_w_ = pid_follow_.calculate(yaw_angle_set_, yaw_angle_);
+        follow_w_ = pid_follow_.update(yaw_angle_set_, yaw_angle_);
       }
       // std::cout<<"follow_w_: "<<follow_w_<<std::endl;
 
@@ -172,7 +167,7 @@ void ChassisControlerDemoNode::loop_10000Hz() {
       chassis_speed_[3] = (-vx_solve_ + vy_solve_ + follow_w_);
 
       for (int i = 0; i < 4; i++) {
-        chassis_current[i] = pid_vec_[i].calculate_robust(chassis_speed_[i], chassis_state_[i]);
+        chassis_current[i] = pid_vec_[i].update(chassis_speed_[i], chassis_state_[i]);
         chassis_current[i] = speed_limit(chassis_current[i], 16384);
         chassis_msg.current.push_back(chassis_current[i]);
       }

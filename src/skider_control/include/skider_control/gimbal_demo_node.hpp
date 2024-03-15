@@ -22,63 +22,9 @@
 #include <skider_interface/msg/gimbal_state.hpp>
 // #include <../../skider_utils/include/utils.hpp>
 #include <skider_utils/utils.hpp>
+#include <skider_utils/pid.hpp>
 
 using namespace std::chrono_literals;
-
-class Limit {
- public:
-  Limit() {
-  }
-  Limit(double min, double max) {
-    max_ = max;
-    min_ = min;
-    out_ = 0;
-  }
-
-  double get(double in) {
-    if (out_ + in < min_) {
-      out_ = min_;
-    } else if (out_ + in > max_) {
-      out_ = max_;
-    } else {
-      out_ += in;
-    }
-    return out_;
-  }
-
- private:
-  double max_, min_;
-  double out_;
-};
-
-class PID {
- public:
-  PID() {
-  }
-  PID(double kp, double ki, double kd) {
-    kp_ = kp;
-    ki_ = ki;
-    kd_ = kd;
-    err_ = 0;
-    err_last_ = 0;
-    output_ = 0;
-  }
-  double calculate(double in, double state_now) {
-    err_ = in - state_now;
-    // std::cout<<"err_: "<<err_<<std::endl;
-    double i_sum_limit = i_sum_limit_.get(err_);
-    // std::cout<<"i_sum_limit: "<<i_sum_limit<<std::endl;
-    output_ = kp_ * err_ + ki_ * i_sum_limit + kd_ * (err_ - err_last_);
-    err_last_ = err_;
-    return output_;
-  }
-  Limit i_sum_limit_;
-
- private:
-  double kp_, ki_, kd_;
-  double err_, err_last_;
-  double output_;
-};
 
 class GimbalControlerDemoNode {
  public:
