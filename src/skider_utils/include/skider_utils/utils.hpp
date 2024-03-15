@@ -127,14 +127,22 @@ double absConstrain(double input, double max_value) {
  * @param deg       角度
  * @return          弧度
  */
-double degToRad(double deg);
+double degToRad(double deg) { 
+  return deg * M_PI / 180;
+}
 
 /***
- * @brief 四元数转欧拉角
- * @param q         四元数
- * @param euler     欧拉角
+ * @brief      四元数转欧拉角
+ * @param[in]  q         四元数
+ * @param[out] euler     欧拉角
  */
-void quatToEuler(const double q[4], double euler[3]);
+void quatToEuler(const double q[4], double euler[3]) {
+  euler[0] = atan2f(2 * (q[0] * q[1] + q[2] * q[3]),
+                    1 - 2 * (q[1] * q[1] + q[2] * q[2]));
+  euler[1] = asinf(2 * (q[0] * q[2] - q[3] * q[1]));
+  euler[2] = atan2f(2 * (q[0] * q[3] + q[1] * q[2]),
+                    1 - 2 * (q[2] * q[2] + q[3] * q[3]));
+}
 
 }  // namespace utils
 
