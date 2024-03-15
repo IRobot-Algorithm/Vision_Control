@@ -2,7 +2,7 @@
 [![clang-format Check](https://github.com/lunarifish/Vision_Control/actions/workflows/style_check.yaml/badge.svg)](https://github.com/lunarifish/Vision_Control/actions/workflows/style_check.yaml)
 [![CodeFactor](https://www.codefactor.io/repository/github/lunarifish/vision_control/badge)](https://www.codefactor.io/repository/github/lunarifish/vision_control)
 
-# 1 .Code Structure
+# Code Structure
 
 ├── firmware: stm32固件，根据[IRbot2022电控组云台框架]( https://github.com/Qylann/gimbal-standard)进行构建  \
 
@@ -18,7 +18,7 @@
 &emsp;&emsp;├── skider_sensor: 传感器处理包，存放传感器的数据处理节点   \
 &emsp;&emsp;└── skider_control: 控制包，存放了一个云台控制节点和一个底盘控制节点  \
 
-# 2 .Dependencies
+# Dependencies
 
 ```
 -ros2=galactic(can not be foxy!)
@@ -55,7 +55,7 @@ sudo ./listdevs
 
 to setup the realtime kernel, please check this [article]( https://zhuanlan.zhihu.com/p/675155576)
 
-# 3 .Check the hardware
+# Check the hardware
 
 ## usb communication
 
@@ -83,7 +83,9 @@ sudo chmod 777 /dev/bus/usb/003/*
 
 ## can communication
 
-can通信分别控制底盘电机，云台电机，
+两条can总线分别挂载了底盘电机和云台电机。
+
+> NOTE: 测试用的车的CAN1的HL线颜色反了，红色是L黑色是H
 
 ``` shell
 ./sh/can.sh
@@ -94,7 +96,7 @@ candump can1    #云台
 
 ## remote
 
-the remote buttons' layout are as follows
+遥控器上的两个拨杆布局如下：
 
 ```
 remote:
@@ -103,11 +105,26 @@ buttons[4]---     ---buttons[1]
 buttons[3]---     ---buttons[0]
 ```
 
+左右拨杆分别拨到上中下某一位置时对应数组元素置1，其余为0
+
+两个摇杆布局如下：
+
+```
+     axis[3]                axis[1]
+     ^                      ^
+     |                      |
+<--------->axis[2]     <--------->axis[0]
+     |                      |
+     v                      v
+```
+
+```axis[4]```是遥控器左上角的轮子，向左转是正向右转是负
+
 ## chassis wheels
 
-the chassis wheels' layout are as follows
+底盘轮子电机布局如下：
 
-``` 
+```
     //2-----battary-----1
     //|                 |
     //|                 |
@@ -117,17 +134,18 @@ the chassis wheels' layout are as follows
     //|                 |
     //|                 |
     //3-----------------4
-    
-	can id = 200 + index
 ```
+can 反馈报文 id = 200 + index
 
 ## gimbal
+
+各电机的RX标准帧ID：
 
 ```c
 #define AMMOR 0x201
 #define AMMOL 0x202
 #define ROTOR 0x203
-#define YAW 0x205 
+#define YAW   0x205 
 #define PITCH 0x206
 ```
 
@@ -138,16 +156,23 @@ the chassis wheels' layout are as follows
 然后依次launch skider_hw、skider_sensor、skider_control
 
 ```shell
-colcon build
+# [可选]清理构建残留
+cd sh
+./clean.sh
+###########
 
+colcon build
 source install/setup.bash
 
+######
 ros2 launch skider_hw skider_hw.launch.py
-
 ros2 launch skider_sensor skider_sensor.launch.py
-
-# 启动之前先检查launch文件内的参数路径
 ros2 launch skider_control skider_control.launch.py
+######
+# 或者
+######
+sh/control.sh
+######
 ```
 
 # 5.Useful commands
@@ -163,10 +188,11 @@ candump can0 | grep 2004
 ```
 
 出现其他问题可优先检查：
-检查sh文件内控制路径、自瞄路径及nuc密码
-检查参数文件是否正确读取
-检查can0 can1顺序
-检查gimbal_demo_node.hpp包含自瞄代码自定义target.msg路径
+
+- sh文件内控制路径、自瞄路径及nuc密码
+- 参数文件是否正确读取
+- can0 can1有没有弄反
+- gimbal_demo_node.hpp包含自瞄代码自定义target.msg路径
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
@@ -184,17 +210,16 @@ ghcr/shitoujie/vision_control \
 
 考虑到上述方法连国内网络时速度极慢，因此可以参考[这篇文章](**https://www.cnblogs.com/rainbow-tan/p/17775385.html**)使用国内的镜像源进行docker pull
 
+在配置文件 /etc/docker/daemon.json 中加入：
+
 ```json
-# 在配置文件 /etc/docker/daemon.json 中加入：
 {
 "registry-mirrors":["https://docker.nju.edu.cn/"]
 }
-
 ```
 
 ```shell
 sudo systemctl restart docker.service # 重新启动 docker
-
 ```
 
 执行`docker info`，如果从输出中看到如下内容，说明配置成功。
@@ -204,8 +229,9 @@ Registry Mirrors:
  https://docker.nju.edu.cn/
 ```
 
+现在可以使用以下命令来拉取镜像:
+
 ```shell
-# 现在可以使用以下命令来拉取镜像
 docker pull ghcr.nju.edu.cn/shitoujie/vision_control:latest
 docker run -it --name vc_devel \
 --privileged --network host \
@@ -227,7 +253,7 @@ vc_develop_image \
 
 cd /ros_ws/Vision_Control
 colcon build
-# 启动之前先检查launch文件内的参数路径，尤其是skider_control.launch.py
+# 启动之前先检查launch文件内的参数路径
 
 # 2.deploy（部署）
 cd docker/deploy
@@ -251,7 +277,7 @@ vc_image1 \
 
 开发完毕后将宿主机下的代码提交github即可
 
-## Usefel commands
+## Useful commands
 
 ```shell
 # use the following command to add more terminals
