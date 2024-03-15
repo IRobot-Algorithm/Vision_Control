@@ -95,11 +95,7 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
 
   RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
 
-  this->pid_yaw_remote_in_ = PID(PIDType::kPosition,
-                                 pid_yaw_remote_in_params_[0], 
-                                 pid_yaw_remote_in_params_[1], 
-                                 pid_yaw_remote_in_params_[2],
-                                 30000, 5000);
+  this->pid_yaw_remote_in_ = PID(PIDType::kPosition, pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2], 30000, 5000);
   this->pid_yaw_remote_out_ = PID(pid_yaw_remote_out_params_[0], pid_yaw_remote_out_params_[1], pid_yaw_remote_out_params_[2]);
   this->pid_yaw_init_in_ = PID(pid_yaw_init_in_params_[0], pid_yaw_init_in_params_[1], pid_yaw_init_in_params_[2]);
   this->pid_yaw_init_out_ = PID(pid_yaw_init_out_params_[0], pid_yaw_init_out_params_[1], pid_yaw_init_out_params_[2]);
