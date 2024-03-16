@@ -17,7 +17,7 @@ echo $PASSWORD | sudo -S chmod 777 /dev/bus/usb/001/*
 # 复制配置文件到install目录
 echo $PASSWORD | sudo chmod +x $PROJECT_DIR/sh/compare_and_cp.py
 $PROJECT_DIR/sh/compare_and_cp.py $PROJECT_DIR/src/skider_control/config/params.yaml $PROJECT_DIR/install/skider_control/share/skider_control/config/params.yaml
-$PROJECT_DIR/sh/compare_and_cp.py $PROJECT_DIR/src/skider_hw/config/hardware_settings.yaml $PROJECT_DIR/install/skider_sensor/share/skider_hw/config/hardware_settings.yaml
+$PROJECT_DIR/sh/compare_and_cp.py $PROJECT_DIR/src/skider_hw/config/hardware_settings.yaml $PROJECT_DIR/install/skider_hw/share/skider_hw/config/hardware_settings.yaml
 $PROJECT_DIR/sh/compare_and_cp.py $PROJECT_DIR/src/skider_sensor/config/sensor_settings.yaml $PROJECT_DIR/install/skider_sensor/share/skider_sensor/config/sensor_settings.yaml
 
 # ip -details link show can0
