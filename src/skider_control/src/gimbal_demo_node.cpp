@@ -4,9 +4,8 @@
 
 using namespace utils;
 
-GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &options) {
-  gimbal_controler_demo_node_ = std::make_shared<rclcpp::Node>("gimbal_controler_node", options);
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Node Begin");
+GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &options) : rclcpp::Node("gimbal_controler_node", options) {
+  RCLCPP_INFO(this->get_logger(), "Node Begin");
 
   // kp, ki, kd
   std::map<std::string, std::vector<double>> pid_params{
@@ -35,111 +34,85 @@ GimbalControlerDemoNode::GimbalControlerDemoNode(const rclcpp::NodeOptions &opti
   };
 
   // 读pid参数，参数在config/params.yaml文件里设置
-  gimbal_controler_demo_node_->declare_parameters("", pid_params);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_remote_in", pid_yaw_remote_in_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_remote_out", pid_yaw_remote_out_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_init_in", pid_yaw_init_in_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_init_out", pid_yaw_init_out_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_vision_in", pid_yaw_vision_in_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_yaw_vision_out", pid_yaw_vision_out_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_pitch_remote_in", pid_pitch_remote_in_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_pitch_remote_out", pid_pitch_remote_out_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_pitch_vision_in", pid_pitch_vision_in_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_pitch_vision_out", pid_pitch_vision_out_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_ammor", pid_ammor_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_ammol", pid_ammol_params_);
-  gimbal_controler_demo_node_->get_parameter<std::vector<double>>("pid_rotor", pid_rotor_params_);
-  std::cout << " pid_yaw_remote_in_params_[0]: " << pid_yaw_remote_in_params_[0] << " pid_yaw_remote_in_params_[1]: " << pid_yaw_remote_in_params_[1] << " pid_yaw_remote_in_params_[2]: " << pid_yaw_remote_in_params_[2] << std::endl;
+  this->declare_parameters("", pid_params);
+  this->get_parameter<std::vector<double>>("pid_yaw_remote_in", pid_yaw_remote_in_params_);
+  this->get_parameter<std::vector<double>>("pid_yaw_remote_out", pid_yaw_remote_out_params_);
+  this->get_parameter<std::vector<double>>("pid_yaw_init_in", pid_yaw_init_in_params_);
+  this->get_parameter<std::vector<double>>("pid_yaw_init_out", pid_yaw_init_out_params_);
+  this->get_parameter<std::vector<double>>("pid_yaw_vision_in", pid_yaw_vision_in_params_);
+  this->get_parameter<std::vector<double>>("pid_yaw_vision_out", pid_yaw_vision_out_params_);
+  this->get_parameter<std::vector<double>>("pid_pitch_remote_in", pid_pitch_remote_in_params_);
+  this->get_parameter<std::vector<double>>("pid_pitch_remote_out", pid_pitch_remote_out_params_);
+  this->get_parameter<std::vector<double>>("pid_pitch_vision_in", pid_pitch_vision_in_params_);
+  this->get_parameter<std::vector<double>>("pid_pitch_vision_out", pid_pitch_vision_out_params_);
+  this->get_parameter<std::vector<double>>("pid_ammor", pid_ammor_params_);
+  this->get_parameter<std::vector<double>>("pid_ammol", pid_ammol_params_);
+  this->get_parameter<std::vector<double>>("pid_rotor", pid_rotor_params_);
+  RCLCPP_DEBUG(this->get_logger(), "pid_yaw_remote_in: %f, %f, %f",
+               pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2]);
 
   // double parameter
-  gimbal_controler_demo_node_->declare_parameters("", double_params);
-  gimbal_controler_demo_node_->get_parameter<double>("ammo_goal_speed", ammo_goal_speed_);
-  gimbal_controler_demo_node_->get_parameter<double>("rotor_goal_speed", rotor_goal_speed_);
-  std::cout << " ammo_goal_speed_: " << ammo_goal_speed_ << " rotor_goal_speed_: " << rotor_goal_speed_ << std::endl;
+  this->declare_parameters("", double_params);
+  this->get_parameter<double>("ammo_goal_speed", ammo_goal_speed_);
+  this->get_parameter<double>("rotor_goal_speed", rotor_goal_speed_);
 
   // bool parameter
-  gimbal_controler_demo_node_->declare_parameters("", bool_params);
-  gimbal_controler_demo_node_->get_parameter<bool>("ammo_enable", ammo_enable_);
-  std::cout << " ammo_enable_: " << ammo_enable_ << std::endl;
+  this->declare_parameters("", bool_params);
+  this->get_parameter<bool>("ammo_enable", ammo_enable_);
 
   std::string imu_subscribe_topic_name_("/skider/imu/data");
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Subscribe IMU data : \"%s\"", imu_subscribe_topic_name_.c_str());
-  imu_subscription_ = gimbal_controler_demo_node_->create_subscription<skider_interface::msg::Imu>(
+  RCLCPP_INFO(this->get_logger(), "Subscribe IMU data : \"%s\"", imu_subscribe_topic_name_.c_str());
+  imu_subscription_ = this->create_subscription<skider_interface::msg::Imu>(
       imu_subscribe_topic_name_, 10, std::bind(&GimbalControlerDemoNode::imu_msg_callback, this, std::placeholders::_1));
 
   std::string joy_subscribe_topic_name_("/skider/joy/data");
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Subscribe JOY data : \"%s\"", joy_subscribe_topic_name_.c_str());
+  RCLCPP_INFO(this->get_logger(), "Subscribe JOY data : \"%s\"", joy_subscribe_topic_name_.c_str());
 
   // publisher是remote_sensor_node，从hw节点接收到sbus包之后提取数据发布出来
-  joy_subscription_ = gimbal_controler_demo_node_->create_subscription<sensor_msgs::msg::Joy>(
+  joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
       joy_subscribe_topic_name_, 10, std::bind(&GimbalControlerDemoNode::joy_msg_callback, this, std::placeholders::_1));
 
-  gimbal_state_subscription_ = gimbal_controler_demo_node_->create_subscription<skider_interface::msg::GimbalState>(
+  gimbal_state_subscription_ = this->create_subscription<skider_interface::msg::GimbalState>(
       "/skider/state/gimbal", 10, std::bind(&GimbalControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
 
-  autoaim_target_subscription_ = gimbal_controler_demo_node_->create_subscription<geometry_msgs::msg::Vector3>(
+  autoaim_target_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3>(
       "/rmos/autoaim/target", 10, std::bind(&GimbalControlerDemoNode::autoaim_msg_callback, this, std::placeholders::_1));
 
   std::string gimbal_command_publish_topic_name_("/skider/command/gimbal");
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Init Gimbal Command Publisher : ");
-  gimbal_command_publisher_ = gimbal_controler_demo_node_->create_publisher<skider_interface::msg::GimbalCommand>(
+  RCLCPP_INFO(this->get_logger(), "Init Gimbal Command Publisher : ");
+  gimbal_command_publisher_ = this->create_publisher<skider_interface::msg::GimbalCommand>(
       gimbal_command_publish_topic_name_, 10);
 
   std::string gimbal_debug_publisg_topic_name_("/skider/debug/gimbal");
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Init Debug Publisher : ");
-  gimbal_debug_publisher_ = gimbal_controler_demo_node_->create_publisher<skider_interface::msg::GimbalDebug>(
+  RCLCPP_INFO(this->get_logger(), "Init Debug Publisher : ");
+  gimbal_debug_publisher_ = this->create_publisher<skider_interface::msg::GimbalDebug>(
       gimbal_debug_publisg_topic_name_, 10);
 
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Follow Init Timer : ");
-  follow_init_timer_ = gimbal_controler_demo_node_->create_wall_timer(1000ms, [this]() { follow_init_ = true; });
-  calculate_call_backgroup_ = gimbal_controler_demo_node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
-  // calculate_pid_timer_ = gimbal_controler_demo_node_->create_wall_timer(1ms, std::bind(&GimbalControlerDemoNode::loop_calculate, this), calculate_call_backgroup_);
+  RCLCPP_INFO(this->get_logger(), "Follow Init Timer : ");
+  follow_init_timer_ = this->create_wall_timer(1000ms, [this]() { follow_init_ = true; });
+  calculate_call_backgroup_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  // calculate_pid_timer_ = this->create_wall_timer(1ms, std::bind(&GimbalControlerDemoNode::loop_calculate, this), calculate_call_backgroup_);
 
-  RCLCPP_INFO(gimbal_controler_demo_node_->get_logger(), "Finish Init");
+  RCLCPP_INFO(this->get_logger(), "Finish Init");
 
   // 用读到的参数初始化PID对象
-  this->pid_yaw_remote_in_ = PID(PIDType::kPosition, pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2], 30000, 5000);
-  this->pid_yaw_remote_out_ = PID(pid_yaw_remote_out_params_[0], pid_yaw_remote_out_params_[1], pid_yaw_remote_out_params_[2]);
-  this->pid_yaw_init_in_ = PID(pid_yaw_init_in_params_[0], pid_yaw_init_in_params_[1], pid_yaw_init_in_params_[2]);
-  this->pid_yaw_init_out_ = PID(pid_yaw_init_out_params_[0], pid_yaw_init_out_params_[1], pid_yaw_init_out_params_[2]);
-  this->pid_yaw_vision_in_ = PID(pid_yaw_vision_in_params_[0], pid_yaw_vision_in_params_[1], pid_yaw_vision_in_params_[2]);
-  this->pid_yaw_vision_out_ = PID(pid_yaw_vision_out_params_[0], pid_yaw_vision_out_params_[1], pid_yaw_vision_out_params_[2]);
-  this->pid_pitch_remote_in_ = PID(pid_pitch_remote_in_params_[0], pid_pitch_remote_in_params_[1], pid_pitch_remote_in_params_[2]);
-  this->pid_pitch_remote_out_ = PID(pid_pitch_remote_out_params_[0], pid_pitch_remote_out_params_[1], pid_pitch_remote_out_params_[2]);
-  this->pid_pitch_vision_in_ = PID(pid_pitch_vision_in_params_[0], pid_pitch_vision_in_params_[1], pid_pitch_vision_in_params_[2]);
-  this->pid_pitch_vision_out_ = PID(pid_pitch_vision_out_params_[0], pid_pitch_vision_out_params_[1], pid_pitch_vision_out_params_[2]);
-  this->pid_ammor_ = PID(pid_ammor_params_[0], pid_ammor_params_[1], pid_ammor_params_[2]);
-  this->pid_ammol_ = PID(pid_ammol_params_[0], pid_ammol_params_[1], pid_ammol_params_[2]);
-  this->pid_rotor_ = PID(pid_rotor_params_[0], pid_rotor_params_[1], pid_rotor_params_[2]);
-}
-
-inline double get_relative_angle(double angle_aim, double angle_ref, int type) {
-  double reletive_angle = angle_aim - angle_ref;
-
-  // 弧度
-  if (type == 1) {
-    while (reletive_angle > M_PI) {
-      reletive_angle -= 2 * M_PI;
-    }
-    while (reletive_angle < -M_PI) {
-      reletive_angle += 2 * M_PI;
-    }
-  }
-
-  // 机械角度
-  if (type == 2) {
-    while (reletive_angle > 4096) {
-      reletive_angle -= 2 * 4096;
-    }
-    while (reletive_angle < -4096) {
-      reletive_angle += 2 * 4096;
-    }
-  }
-  return reletive_angle;
+  pid_yaw_remote_in_ = PID(PIDType::kPosition, pid_yaw_remote_in_params_[0], pid_yaw_remote_in_params_[1], pid_yaw_remote_in_params_[2], 30000, 5000);
+  pid_yaw_remote_out_ = PID(pid_yaw_remote_out_params_[0], pid_yaw_remote_out_params_[1], pid_yaw_remote_out_params_[2]);
+  pid_yaw_init_in_ = PID(pid_yaw_init_in_params_[0], pid_yaw_init_in_params_[1], pid_yaw_init_in_params_[2]);
+  pid_yaw_init_out_ = PID(pid_yaw_init_out_params_[0], pid_yaw_init_out_params_[1], pid_yaw_init_out_params_[2]);
+  pid_yaw_vision_in_ = PID(pid_yaw_vision_in_params_[0], pid_yaw_vision_in_params_[1], pid_yaw_vision_in_params_[2]);
+  pid_yaw_vision_out_ = PID(pid_yaw_vision_out_params_[0], pid_yaw_vision_out_params_[1], pid_yaw_vision_out_params_[2]);
+  pid_pitch_remote_in_ = PID(pid_pitch_remote_in_params_[0], pid_pitch_remote_in_params_[1], pid_pitch_remote_in_params_[2]);
+  pid_pitch_remote_out_ = PID(pid_pitch_remote_out_params_[0], pid_pitch_remote_out_params_[1], pid_pitch_remote_out_params_[2]);
+  pid_pitch_vision_in_ = PID(pid_pitch_vision_in_params_[0], pid_pitch_vision_in_params_[1], pid_pitch_vision_in_params_[2]);
+  pid_pitch_vision_out_ = PID(pid_pitch_vision_out_params_[0], pid_pitch_vision_out_params_[1], pid_pitch_vision_out_params_[2]);
+  pid_ammor_ = PID(pid_ammor_params_[0], pid_ammor_params_[1], pid_ammor_params_[2]);
+  pid_ammol_ = PID(pid_ammol_params_[0], pid_ammol_params_[1], pid_ammol_params_[2]);
+  pid_rotor_ = PID(pid_rotor_params_[0], pid_rotor_params_[1], pid_rotor_params_[2]);
 }
 
 void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg) {
-  // std::cout << "start" << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
+  // std::cout << "start" << this->get_clock()->now().nanoseconds() << std::endl;
 
   if (msg.buttons[3] == true) {
     if (msg.buttons[0] == true) {
@@ -174,7 +147,6 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
       robot_state_ = RobotState::AutoaimGimbalAutoaimRotor;
     }
   }
-  // std::cout << "RobotState" << (int)robot_state_ << std::endl;
 
   if (msg.axes[4] > 0.9f) {
     shoot_request_ = true;
@@ -187,49 +159,47 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
   if ((msg.buttons[1] == true) || (msg.buttons[2] == true) || (msg.buttons[4] != true)) {
     if (follow_init_ != true) {
       // 云台转到底盘处
-      double yaw_relative = get_relative_angle(yaw_zero_angle_, yaw_angle_, 2);
+      double yaw_relative = loopConstrain(yaw_zero_angle_ - yaw_angle_, -4096, 4096);
       double yaw_init = yaw_angle_ + yaw_relative;
 
-      double yaw_w_goal = this->pid_yaw_init_out_.update(yaw_init, yaw_angle_);
-      double yaw_current = this->pid_yaw_init_in_.update(yaw_w_goal, w_yaw_);
+      double yaw_w_goal = pid_yaw_init_out_.update(yaw_init, yaw_angle_);
+      double yaw_current = pid_yaw_init_in_.update(yaw_w_goal, w_yaw_);
       gimbal_command_msg_.yaw_current = (int16_t)((int)(absConstrain(yaw_current, 30000.0)));
 
       yaw_angle_set_ = imu_yaw_;
       gimbal_command_msg_.follow_init = follow_init_;
     } else {
       yaw_angle_set_ = loopConstrain(yaw_angle_set_ + (-msg.axes[2]) * 0.01, -M_PI, M_PI);
-      double yaw_relative = get_relative_angle(yaw_angle_set_, imu_yaw_, 1);
+      double yaw_relative = loopConstrain(yaw_angle_set_ - imu_yaw_, -M_PI, M_PI);
       yaw_angle_set_ = imu_yaw_ + yaw_relative;
 
-      double yaw_w_goal = this->pid_yaw_remote_out_.update(yaw_angle_set_, imu_yaw_);
-      double yaw_current = this->pid_yaw_remote_in_.update(yaw_w_goal, w_yaw_);
+      double yaw_w_goal = pid_yaw_remote_out_.update(yaw_angle_set_, imu_yaw_);
+      double yaw_current = pid_yaw_remote_in_.update(yaw_w_goal, w_yaw_);
       gimbal_command_msg_.yaw_current = (int16_t)((int)(absConstrain(yaw_current, 30000.0)));
 
       gimbal_command_msg_.follow_init = true;
     }
 
     pitch_angle_set_ = constrain((pitch_angle_set_ + (msg.axes[3]) * 0.03), -0.4, 0.43);
-    double pitch_w_goal = this->pid_pitch_remote_out_.update(pitch_angle_set_, imu_pitch_);
-    double pitch_current = this->pid_pitch_remote_in_.update(pitch_w_goal, w_pitch_);
+    double pitch_w_goal = pid_pitch_remote_out_.update(pitch_angle_set_, imu_pitch_);
+    double pitch_current = pid_pitch_remote_in_.update(pitch_w_goal, w_pitch_);
     gimbal_command_msg_.pitch_current = (int16_t)(absConstrain(pitch_current, 30000.0));
   }
 
   // 右边拨杆拨到上 摩擦轮转动
   if (msg.buttons[2] == true) {
     if (ammo_enable_) {
-      this->pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
-      gimbal_command_msg_.ammor_current = (int16_t)(absConstrain(this->pid_ammor_.value(), (int16_t)30000));
-      // gimbal_command_msg_.ammor_current = 0;
-      this->pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
-      gimbal_command_msg_.ammol_current = (int16_t)(absConstrain(this->pid_ammol_.value(), (int16_t)30000));
-      // gimbal_command_msg_.ammol_current = 0;
+      pid_ammor_.update(ammo_goal_speed_, ammor_speed_);
+      gimbal_command_msg_.ammor_current = (int16_t)(absConstrain(pid_ammor_.value(), (int16_t)30000));
+      pid_ammol_.update(-ammo_goal_speed_, ammol_speed_);
+      gimbal_command_msg_.ammol_current = (int16_t)(absConstrain(pid_ammol_.value(), (int16_t)30000));
     }
   }
   // 右边拨杆拨到上，轮子向左转 拨盘转动
   if (msg.axes[4] > 0.9f && msg.buttons[2] == true) {
     rotor_enable_ = true;
-    this->pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
-    gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(this->pid_rotor_.value(), (int16_t)30000));
+    pid_rotor_.update(rotor_goal_speed_, rotor_speed_);
+    gimbal_command_msg_.rotor_current = (int16_t)(absConstrain(pid_rotor_.value(), (int16_t)30000));
   } else if (msg.buttons[2] != true) {
     gimbal_command_msg_.rotor_current = 0;
   }
@@ -272,7 +242,7 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
 
   // debug
   gimbal_debug_msg_.header.set__frame_id("debug_frame");
-  gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+  gimbal_debug_msg_.header.set__stamp(this->get_clock()->now());
   gimbal_debug_msg_.yaw_angle_input = yaw_angle_set_;
   gimbal_debug_msg_.yaw_angle_state = imu_yaw_;
   // gimbal_debug_msg_.yaw_w_input = yaw_w_goal;
@@ -293,7 +263,7 @@ void GimbalControlerDemoNode::joy_msg_callback(const sensor_msgs::msg::Joy &msg)
   gimbal_command_msg_.rotor_current = 0;
   // gimbal_command_msg_.follow_init = false;
 
-  // std::cout << "end  " << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
+  // std::cout << "end  " << this->get_clock()->now().nanoseconds() << std::endl;
 }
 
 void GimbalControlerDemoNode::imu_msg_callback(const skider_interface::msg::Imu &msg) {
@@ -324,7 +294,7 @@ void GimbalControlerDemoNode::autoaim_msg_callback(const geometry_msgs::msg::Vec
 }
 
 void GimbalControlerDemoNode::loop_calculate() {
-  // std::cout << "start" << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
+  // std::cout << "start" << this->get_clock()->now().nanoseconds() << std::endl;
   // if(rotor_enable_){
 
   //     std::cout << "rotor_speed_" << rotor_speed_ << std::endl;
@@ -347,21 +317,21 @@ void GimbalControlerDemoNode::loop_calculate() {
 
   // }
   // gimbal_command_msg_.header.set__frame_id("Controler Gimbal Command");
-  // gimbal_command_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+  // gimbal_command_msg_.header.set__stamp(this->get_clock()->now());
   // gimbal_command_publisher_->publish(gimbal_command_msg_);
 
   // gimbal_debug_msg_.header.set__frame_id("debug_frame");
-  // gimbal_debug_msg_.header.set__stamp(gimbal_controler_demo_node_->get_clock()->now());
+  // gimbal_debug_msg_.header.set__stamp(this->get_clock()->now());
   // gimbal_debug_msg_.rotor_speed_input = rotor_goal_speed_;
   // gimbal_debug_msg_.rotor_speed_state = rotor_speed_;
   // gimbal_debug_publisher_->publish(gimbal_debug_msg_);
-  // // std::cout << "end  " << gimbal_controler_demo_node_->get_clock()->now().nanoseconds() << std::endl;
+  // // std::cout << "end  " << this->get_clock()->now().nanoseconds() << std::endl;
 }
 
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
-  auto gimbal_controler_demo_node = std::make_shared<GimbalControlerDemoNode>();
-  rclcpp::spin(gimbal_controler_demo_node->get_node_base_interface());
+  auto gimbal_controler_demo_node = ::std::make_shared<GimbalControlerDemoNode>();
+  rclcpp::spin(gimbal_controler_demo_node);
   rclcpp::shutdown();
   return 0;
 }

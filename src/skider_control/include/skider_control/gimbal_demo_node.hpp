@@ -26,12 +26,9 @@
 
 using namespace std::chrono_literals;
 
-class GimbalControlerDemoNode {
+class GimbalControlerDemoNode : public rclcpp::Node {
  public:
   explicit GimbalControlerDemoNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
-  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() {
-    return gimbal_controler_demo_node_->get_node_base_interface();
-  }
 
  private:
   void joy_msg_callback(const sensor_msgs::msg::Joy& msg);
@@ -41,7 +38,6 @@ class GimbalControlerDemoNode {
   void loop_calculate();
 
  private:
-  rclcpp::Node::SharedPtr gimbal_controler_demo_node_;
   rclcpp::Subscription<skider_interface::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_;
   rclcpp::Subscription<skider_interface::msg::GimbalState>::SharedPtr gimbal_state_subscription_;
@@ -90,16 +86,16 @@ class GimbalControlerDemoNode {
   double ammor_speed_, ammol_speed_, rotor_speed_;
 
   // init & goal
-  bool follow_init_ = false;
-  bool ammo_enable_ = false;
-  bool rotor_enable_ = false;
+  bool follow_init_{false};
+  bool ammo_enable_{false};
+  bool rotor_enable_{false};
   double yaw_zero_angle_;
   double ammo_goal_speed_, rotor_goal_speed_;
 
   // ---joy command---
-  RobotState robot_state_ = RobotState::ChassisWeakGimbalWeak;
-  bool shoot_request_ = false;
-  bool spin_request_ = false;
+  RobotState robot_state_{RobotState::ChassisWeakGimbalWeak};
+  bool shoot_request_{false};
+  bool spin_request_{false};
 
  public:
   skider_interface::msg::GimbalCommand gimbal_command_msg_;

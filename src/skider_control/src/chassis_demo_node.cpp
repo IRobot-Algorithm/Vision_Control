@@ -4,9 +4,8 @@
 
 using namespace utils;
 
-ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &options) {
-  chassis_controler_demo_node_ = std::make_shared<rclcpp::Node>("chassis_controler_node", options);
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Node Begin");
+ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &options) : rclcpp::Node("chassis_controler_node", options) {
+  RCLCPP_INFO(this->get_logger(), "Node Begin");
 
   // kp, ki, kd
   std::map<std::string, std::vector<double>> pid_params{
@@ -15,68 +14,65 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &op
       {"pid3", {0.0, 0.0, 0.0}},
       {"pid4", {0.0, 0.0, 0.0}},
       {"pid_follow", {0.0, 0.0, 0.0}},
-
   };
   std::map<std::string, double> params{
-
       {"spin_w", 0.0},
       {"yaw_zero_angle", 0.0},
-
   };
 
-  chassis_controler_demo_node_->declare_parameters("", pid_params);
+  this->declare_parameters("", pid_params);
   // // pid parameter
-  chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid1", pid1_params_);
-  chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid2", pid2_params_);
-  chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid3", pid3_params_);
-  chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid4", pid4_params_);
-  chassis_controler_demo_node_->get_parameter<std::vector<double>>("pid_follow", pid_follow_params_);
+  this->get_parameter<std::vector<double>>("pid1", pid1_params_);
+  this->get_parameter<std::vector<double>>("pid2", pid2_params_);
+  this->get_parameter<std::vector<double>>("pid3", pid3_params_);
+  this->get_parameter<std::vector<double>>("pid4", pid4_params_);
+  this->get_parameter<std::vector<double>>("pid_follow", pid_follow_params_);
 
   std::cout << " pid1_params_[0]: " << pid1_params_[0] << " pid1_params_[1]: " << pid1_params_[1] << " pid1_params_[2]: " << pid1_params_[2] << std::endl;
 
-  chassis_controler_demo_node_->declare_parameters("", params);
-  chassis_controler_demo_node_->get_parameter<double>("spin_w", spin_w_);
-  chassis_controler_demo_node_->get_parameter<double>("yaw_zero_angle", yaw_zero_angle_);
+  this->declare_parameters("", params);
+  this->get_parameter<double>("spin_w", spin_w_);
+  this->get_parameter<double>("yaw_zero_angle", yaw_zero_angle_);
 
   std::cout << " spin_w_: " << spin_w_ << " yaw_zero_angle_: " << yaw_zero_angle_ << std::endl;
 
   // ---subscription---
   std::string imu_subscribe_topic_name_("/skider/imu/data");
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Subscribe IMU data : \"%s\"", imu_subscribe_topic_name_.c_str());
-  imu_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::Imu>(
+  RCLCPP_INFO(this->get_logger(), "Subscribe IMU data : \"%s\"", imu_subscribe_topic_name_.c_str());
+  imu_subscription_ = this->create_subscription<skider_interface::msg::Imu>(
       imu_subscribe_topic_name_, 10, std::bind(&ChassisControlerDemoNode::imu_msg_callback, this, std::placeholders::_1));
 
   std::string joy_subscribe_topic_name_("/skider/joy/data");
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Subscribe JOY data : \"%s\"", joy_subscribe_topic_name_.c_str());
-  joy_subscription_ = chassis_controler_demo_node_->create_subscription<sensor_msgs::msg::Joy>(
+  RCLCPP_INFO(this->get_logger(), "Subscribe JOY data : \"%s\"", joy_subscribe_topic_name_.c_str());
+  joy_subscription_ = this->create_subscription<sensor_msgs::msg::Joy>(
       joy_subscribe_topic_name_, 10, std::bind(&ChassisControlerDemoNode::joy_msg_callback, this, std::placeholders::_1));
 
-  chassis_state_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::ChassisState>(
+  chassis_state_subscription_ = this->create_subscription<skider_interface::msg::ChassisState>(
       "/skider/state/chassis", 10, std::bind(&ChassisControlerDemoNode::chassis_msg_callback, this, std::placeholders::_1));
 
-  gimbal_state_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalState>(
+  gimbal_state_subscription_ = this->create_subscription<skider_interface::msg::GimbalState>(
       "/skider/state/gimbal", 10, std::bind(&ChassisControlerDemoNode::gimbal_msg_callback, this, std::placeholders::_1));
 
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Subscribe Gimbal Command");
-  gimbal_command_subscription_ = chassis_controler_demo_node_->create_subscription<skider_interface::msg::GimbalCommand>(
+  RCLCPP_INFO(this->get_logger(), "Subscribe Gimbal Command");
+  gimbal_command_subscription_ = this->create_subscription<skider_interface::msg::GimbalCommand>(
       "/skider/command/gimbal", 10, std::bind(&ChassisControlerDemoNode::gimbal_command_msg_callback, this, std::placeholders::_1));
 
   // ---publisher---
   std::string chassis_command_publish_topic_name_("/skider/command/chassis");
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Init Chassis Command Publisher : ");
-  chassis_command_publisher_ = chassis_controler_demo_node_->create_publisher<skider_interface::msg::ChassisCommand>(
+  RCLCPP_INFO(this->get_logger(), "Init Chassis Command Publisher : ");
+  chassis_command_publisher_ = this->create_publisher<skider_interface::msg::ChassisCommand>(
       chassis_command_publish_topic_name_, 10);
 
   // ---debug---
   // std::string chassis_debug_publisg_topic_name_("/skider/debug");
-  // RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Init Debug Publisher : ");
-  // debug_publisher_ = chassis_controler_demo_node_->create_publisher<skider_interface::msg::Debug>(
+  // RCLCPP_INFO(this->get_logger(), "Init Debug Publisher : ");
+  // debug_publisher_ = this->create_publisher<skider_interface::msg::Debug>(
   //     chassis_debug_publisg_topic_name_, 10);
 
   // ---timer---
-  timer_1000Hz_ = chassis_controler_demo_node_->create_wall_timer(100us, std::bind(&ChassisControlerDemoNode::loop_10000Hz, this));
+  timer_1000Hz_ = this->create_wall_timer(100us, std::bind(&ChassisControlerDemoNode::loop_10000Hz, this));
 
-  RCLCPP_INFO(chassis_controler_demo_node_->get_logger(), "Finish Init");
+  RCLCPP_INFO(this->get_logger(), "Finish Init");
 
   // ---PID---
   PID pid1(PIDType::kPosition, pid1_params_[0], pid1_params_[1], pid1_params_[2], DBL_MAX, 1000);
@@ -95,7 +91,7 @@ ChassisControlerDemoNode::ChassisControlerDemoNode(const rclcpp::NodeOptions &op
 void ChassisControlerDemoNode::loop_10000Hz() {
   skider_interface::msg::ChassisCommand chassis_msg;
   chassis_msg.header.set__frame_id("Controler Chassis Command");
-  chassis_msg.header.set__stamp(chassis_controler_demo_node_->get_clock()->now());
+  chassis_msg.header.set__stamp(this->get_clock()->now());
   chassis_msg.header.stamp = stamp_.stamp;
   double chassis_current[4];
 
@@ -139,7 +135,7 @@ void ChassisControlerDemoNode::loop_10000Hz() {
     }
   }
   chassis_command_publisher_->publish(chassis_msg);
-  // debug_msg_.header.stamp = chassis_controler_demo_node_->get_clock()->now();
+  // debug_msg_.header.stamp = this->get_clock()->now();
   // debug_msg_.header.frame_id = "debug";
 }
 
@@ -192,7 +188,7 @@ void ChassisControlerDemoNode::gimbal_command_msg_callback(const skider_interfac
 int main(int argc, char *argv[]) {
   rclcpp::init(argc, argv);
   auto chassis_controler_demo_node = std::make_shared<ChassisControlerDemoNode>();
-  rclcpp::spin(chassis_controler_demo_node->get_node_base_interface());
+  rclcpp::spin(chassis_controler_demo_node);
   rclcpp::shutdown();
   return 0;
 }

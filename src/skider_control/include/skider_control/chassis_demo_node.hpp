@@ -25,12 +25,9 @@
 
 using namespace std::chrono_literals;
 
-class ChassisControlerDemoNode {
+class ChassisControlerDemoNode : public rclcpp::Node {
  public:
   explicit ChassisControlerDemoNode(const rclcpp::NodeOptions& options = rclcpp::NodeOptions());
-  rclcpp::node_interfaces::NodeBaseInterface::SharedPtr get_node_base_interface() {
-    return chassis_controler_demo_node_->get_node_base_interface();
-  }
 
  private:
   void loop_10000Hz();
@@ -42,7 +39,6 @@ class ChassisControlerDemoNode {
 
  private:
   rclcpp::TimerBase::SharedPtr timer_1000Hz_;
-  rclcpp::Node::SharedPtr chassis_controler_demo_node_;
   rclcpp::Subscription<skider_interface::msg::Imu>::SharedPtr imu_subscription_;
   rclcpp::Subscription<sensor_msgs::msg::Joy>::SharedPtr joy_subscription_;
   rclcpp::Subscription<skider_interface::msg::ChassisState>::SharedPtr chassis_state_subscription_;
