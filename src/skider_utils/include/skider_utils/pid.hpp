@@ -71,7 +71,6 @@ class RingPID : public PID {
   void handleZeroCrossing();
 
   double cycle_;
-
 };  // class RingPID
 
 /***

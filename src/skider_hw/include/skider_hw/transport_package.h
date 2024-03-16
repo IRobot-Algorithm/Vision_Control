@@ -21,8 +21,7 @@ typedef unsigned int uint32_t;
 
 #pragma pack(push, 1)
 
-typedef struct
-{
+typedef struct {
   int16_t gyro_x;
   int16_t gyro_y;
   int16_t gyro_z;
@@ -31,8 +30,7 @@ typedef struct
   int16_t accl_z;
 } IMUMessage_t;
 
-typedef struct
-{
+typedef struct {
   // Real Time
   uint16_t ammo0_current_heat;
   uint16_t ammo1_current_heat;
@@ -52,7 +50,6 @@ typedef struct
   uint8_t power_supply;
   uint8_t blood_remain;
   uint8_t blood_max;
-
 } RefereeMessage_t;
 
 typedef struct GimbalHWReceivePackage {
